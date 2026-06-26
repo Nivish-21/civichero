@@ -129,3 +129,39 @@ Everything before deploy (1a–1d) I can build now without these.
 
 ## Status
 AWAITING APPROVAL on Decision 1 (architecture) + Decision 2 (Track 2). No code until approved.
+
+---
+
+## Step 4 (NEW) — Agentic Resolution Layer  ← the 40% differentiator
+**Why:** current AI = one Gemini Vision classification. To score Agentic Depth (20%) +
+Innovation (20%), add a multi-step, context-aware agent that ACTS on a reported issue.
+
+**Server: new endpoint `/api/agent/resolve`** (Gemini, structured output). Input: the issue
+(category, severity, summary, location/address) + a compact list of existing nearby issues.
+Agent produces:
+- `authority`: responsible department + one-line justification (e.g. Roads Dept, Water Board).
+- `duplicateOf`: id of a likely duplicate among nearby issues, or null (dedup reasoning).
+- `priorityScore` (0-100) + suggested SLA days, from severity + upvotes + category.
+- `draftReport`: a formal, ready-to-send complaint text citing the issue specifics.
+- `recommendedActions`: 2-3 concrete next steps.
+
+**Client:**
+- [ ] "AI Action Plan" panel on IssueDetailPage showing authority, priority, duplicate flag,
+  draft report (copyable), recommended actions.
+- [ ] Trigger after triage in the report flow (and a re-run button on detail).
+- [ ] Persist the agent output on the issue doc (new optional field `agentPlan`).
+
+**Done-gate:** report an issue locally → agent returns a routed authority + draft + priority,
+rendered on the detail page; verified end-to-end (simulated gracefully without a key).
+
+## Step 5 (NEW, follow-up) — Impact dashboard + predictive hotspots
+- [ ] Dashboard: counts by category/status/area, avg resolution time, before/after.
+- [ ] Predictive agent over all issues → recurring hotspots / likely-next-issue areas.
+
+## Step 6 (NEW, follow-up) — Real gamification
+- [ ] Move points from localStorage → Firestore `users` collection; real leaderboard.
+
+## Known weaknesses to fix before submission
+- Firebase config (incl. web apiKey) is in the public repo (public-by-design, but LOCK Firestore
+  + Storage rules; restrict the API key in console).
+- Points are client-local only (Step 6 fixes).

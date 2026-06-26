@@ -1,16 +1,20 @@
 export type IssueCategory =
-  | 'Pothole'
-  | 'Water Leak'
-  | 'Streetlight'
-  | 'Garbage/Waste'
-  | 'Drainage'
-  | 'Road Damage'
-  | 'Public Safety'
-  | 'Other';
+  | "Pothole"
+  | "Water Leak"
+  | "Streetlight"
+  | "Garbage/Waste"
+  | "Drainage"
+  | "Road Damage"
+  | "Public Safety"
+  | "Other";
 
-export type IssueSeverity = 'Low' | 'Medium' | 'High';
+export type IssueSeverity = "Low" | "Medium" | "High";
 
-export type IssueStatus = 'Reported' | 'Acknowledged' | 'In Progress' | 'Resolved';
+export type IssueStatus =
+  | "Reported"
+  | "Acknowledged"
+  | "In Progress"
+  | "Resolved";
 
 export interface StatusTimelineEvent {
   status: IssueStatus;
@@ -35,6 +39,21 @@ export interface CivicIssue {
   userId: string;
   timestamp: number;
   history: StatusTimelineEvent[];
+  agentPlan?: AgentPlan; // populated on-demand by the Agentic Resolution Layer
+}
+
+// Output of the Agentic Resolution Layer (/api/agent/resolve).
+export interface AgentPlan {
+  authority: string;
+  authorityReason: string;
+  duplicateOfId: string | null;
+  duplicateReason: string;
+  priorityScore: number; // 0-100
+  slaDays: number;
+  draftReport: string;
+  recommendedActions: string[];
+  isSimulated: boolean;
+  generatedAt: number;
 }
 
 export interface UserProfile {

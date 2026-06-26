@@ -18,8 +18,13 @@ Gemini (multimodal) + Google Maps Platform. Deploy: AI Studio Publish → Cloud 
 Repo: AI Studio GitHub export. Genkit TBD post-export.
 
 ## Active step
-**Step 1 (revised) — AI Studio Build Mode: generate app + deploy smoke-test + GitHub export.**
-USER-driven (Google login). I supply the Build Mode prompt + step-by-step.
+**Step 1 (in progress) — code exported, deploy bugs fixed, repo + deploy pending.**
+- App exported from AI Studio to `/Users/nivish/development/civichero` (React + Express + Vite,
+  Gemini vision triage, Firebase + Maps deps). Also imported into Antigravity.
+- FIXED two Cloud Run deploy blockers in server.ts (hardcoded PORT; import.meta.url-in-CJS crash).
+  Verified prod start locally on injected PORT. Committed locally (not pushed).
+- Brought docs/ into the civichero repo. Added docs/lessons.md.
+- PENDING: (1) push to GitHub (mandatory deliverable), (2) choose deploy path (see below).
 
 ## Blocked on user (the AI Studio steps)
 1. AI Studio Build Mode: paste the provided prompt, generate the app.

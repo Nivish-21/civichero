@@ -1,20 +1,47 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import { 
-  collection, 
-  doc, 
-  setDoc, 
-  updateDoc, 
-  onSnapshot, 
-  query, 
-  orderBy, 
-  arrayUnion, 
-  arrayRemove, 
-  increment 
-} from 'firebase/firestore';
-import { ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { auth, db, storage } from '../lib/firebase';
-import { CivicIssue, UserProfile, IssueStatus, IssueCategory, IssueSeverity } from '../types';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { signInAnonymously, onAuthStateChanged } from "firebase/auth";
+import {
+  collection,
+  doc,
+  setDoc,
+  updateDoc,
+  onSnapshot,
+  query,
+  orderBy,
+  arrayUnion,
+  arrayRemove,
+  increment,
+} from "firebase/firestore";
+import { ref, uploadString, getDownloadURL } from "firebase/storage";
+import { auth, db, storage } from "../lib/firebase";
+import {
+  CivicIssue,
+  UserProfile,
+  IssueStatus,
+  IssueCategory,
+  IssueSeverity,
+  AgentPlan,
+} from "../types";
+
+// Haversine distance in metres between two lat/long points. Used to find the
+// nearby issues the resolution agent reasons over for duplicate detection.
+function distanceMeters(
+  aLat: number,
+  aLng: number,
+  bLat: number,
+  bLng: number,
+): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(bLat - aLat);
+  const dLng = toRad(bLng - aLng);
+  const lat1 = toRad(aLat);
+  const lat2 = toRad(bLat);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
 
 interface AppContextType {
   user: UserProfile | null;
@@ -33,13 +60,20 @@ interface AppContextType {
     address?: string;
   }) => Promise<string>;
   upvoteIssue: (issueId: string) => Promise<void>;
-  updateIssueStatus: (issueId: string, status: IssueStatus, notes: string) => Promise<void>;
+  updateIssueStatus: (
+    issueId: string,
+    status: IssueStatus,
+    notes: string,
+  ) => Promise<void>;
+  resolveIssuePlan: (issueId: string) => Promise<void>;
   mapsKeyAvailable: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [issues, setIssues] = useState<CivicIssue[]>([]);
@@ -48,7 +82,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Check maps key availability
   useEffect(() => {
-    fetch('/api/maps-config')
+    fetch("/api/maps-config")
       .then((res) => res.json())
       .then((data) => {
         setMapsKeyAvailable(data.hasKey);
@@ -63,19 +97,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         // Retrieve or generate persistent user profile details in LocalStorage
-        const storedName = localStorage.getItem(`civichero_name_${firebaseUser.uid}`);
-        const storedAvatar = localStorage.getItem(`civichero_avatar_${firebaseUser.uid}`);
-        const storedPoints = localStorage.getItem(`civichero_points_${firebaseUser.uid}`);
+        const storedName = localStorage.getItem(
+          `civichero_name_${firebaseUser.uid}`,
+        );
+        const storedAvatar = localStorage.getItem(
+          `civichero_avatar_${firebaseUser.uid}`,
+        );
+        const storedPoints = localStorage.getItem(
+          `civichero_points_${firebaseUser.uid}`,
+        );
 
-        const displayName = storedName || `Citizen-${Math.floor(1000 + Math.random() * 9000)}`;
+        const displayName =
+          storedName || `Citizen-${Math.floor(1000 + Math.random() * 9000)}`;
         // Use styled SVG avatars using dicebear style (shapes or bottts)
-        const avatarUrl = storedAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${firebaseUser.uid}`;
+        const avatarUrl =
+          storedAvatar ||
+          `https://api.dicebear.com/7.x/bottts/svg?seed=${firebaseUser.uid}`;
         const points = storedPoints ? parseInt(storedPoints, 10) : 10; // Start with 10 goodwill points
 
         if (!storedName) {
-          localStorage.setItem(`civichero_name_${firebaseUser.uid}`, displayName);
-          localStorage.setItem(`civichero_avatar_${firebaseUser.uid}`, avatarUrl);
-          localStorage.setItem(`civichero_points_${firebaseUser.uid}`, points.toString());
+          localStorage.setItem(
+            `civichero_name_${firebaseUser.uid}`,
+            displayName,
+          );
+          localStorage.setItem(
+            `civichero_avatar_${firebaseUser.uid}`,
+            avatarUrl,
+          );
+          localStorage.setItem(
+            `civichero_points_${firebaseUser.uid}`,
+            points.toString(),
+          );
         }
 
         setUser({
@@ -90,7 +142,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try {
           await signInAnonymously(auth);
         } catch (error) {
-          console.error('Anonymous auth failed:', error);
+          console.error("Anonymous auth failed:", error);
           setLoadingUser(false);
         }
       }
@@ -101,23 +153,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // 2. Real-time issues synchronization from Firestore
   useEffect(() => {
-    const issuesQuery = query(collection(db, 'issues'), orderBy('timestamp', 'desc'));
+    const issuesQuery = query(
+      collection(db, "issues"),
+      orderBy("timestamp", "desc"),
+    );
 
-    const unsubscribe = onSnapshot(issuesQuery, (snapshot) => {
-      const fetchedIssues: CivicIssue[] = [];
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        fetchedIssues.push({
-          id: docSnap.id,
-          ...data,
-        } as CivicIssue);
-      });
-      setIssues(fetchedIssues);
-      setLoadingIssues(false);
-    }, (error) => {
-      console.error('Error syncing Firestore issues:', error);
-      setLoadingIssues(false);
-    });
+    const unsubscribe = onSnapshot(
+      issuesQuery,
+      (snapshot) => {
+        const fetchedIssues: CivicIssue[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          fetchedIssues.push({
+            id: docSnap.id,
+            ...data,
+          } as CivicIssue);
+        });
+        setIssues(fetchedIssues);
+        setLoadingIssues(false);
+      },
+      (error) => {
+        console.error("Error syncing Firestore issues:", error);
+        setLoadingIssues(false);
+      },
+    );
 
     return () => unsubscribe();
   }, []);
@@ -134,35 +193,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     longitude: number;
     address?: string;
   }): Promise<string> => {
-    if (!user) throw new Error('User must be logged in to report an issue');
+    if (!user) throw new Error("User must be logged in to report an issue");
 
     // Create a new document reference to get the ID beforehand
-    const issueRef = doc(collection(db, 'issues'));
+    const issueRef = doc(collection(db, "issues"));
     const issueId = issueRef.id;
 
-    let photoUrl = '';
-    let videoUrl = '';
+    let photoUrl = "";
+    let videoUrl = "";
 
     // Upload photo to Firebase Storage
     try {
-      console.log('Uploading photo to Firebase Storage...');
+      console.log("Uploading photo to Firebase Storage...");
       const photoRef = ref(storage, `issues/${issueId}/photo.jpg`);
-      await uploadString(photoRef, data.photoBase64, 'data_url');
+      await uploadString(photoRef, data.photoBase64, "data_url");
       photoUrl = await getDownloadURL(photoRef);
     } catch (err) {
-      console.warn('Storage photo upload failed, using robust inline Base64 fallback:', err);
+      console.warn(
+        "Storage photo upload failed, using robust inline Base64 fallback:",
+        err,
+      );
       photoUrl = data.photoBase64; // Fallback directly to inline Base64 so it never fails
     }
 
     // Upload video if present
     if (data.videoBase64) {
       try {
-        console.log('Uploading short video to Firebase Storage...');
+        console.log("Uploading short video to Firebase Storage...");
         const videoRef = ref(storage, `issues/${issueId}/video.mp4`);
-        await uploadString(videoRef, data.videoBase64, 'data_url');
+        await uploadString(videoRef, data.videoBase64, "data_url");
         videoUrl = await getDownloadURL(videoRef);
       } catch (err) {
-        console.warn('Storage video upload failed, using robust inline Base64 fallback:', err);
+        console.warn(
+          "Storage video upload failed, using robust inline Base64 fallback:",
+          err,
+        );
         videoUrl = data.videoBase64;
       }
     }
@@ -177,19 +242,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       videoUrl: videoUrl || undefined,
       latitude: data.latitude,
       longitude: data.longitude,
-      address: data.address || 'Hyperlocal Area',
-      status: 'Reported',
+      address: data.address || "Hyperlocal Area",
+      status: "Reported",
       upvotes: 0,
       upvotedByUserIds: [],
       userId: user.uid,
       timestamp: Date.now(),
       history: [
         {
-          status: 'Reported',
-          notes: 'Issue reported to the Community Hero platform. Automated AI triage completed successfully.',
+          status: "Reported",
+          notes:
+            "Issue reported to the Community Hero platform. Automated AI triage completed successfully.",
           timestamp: Date.now(),
-        }
-      ]
+        },
+      ],
     };
 
     // Save to Firestore
@@ -197,18 +263,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Increase user points for contributing to the community!
     const updatedPoints = user.points + 20; // 20 points for reporting
-    localStorage.setItem(`civichero_points_${user.uid}`, updatedPoints.toString());
-    setUser(prev => prev ? { ...prev, points: updatedPoints } : null);
+    localStorage.setItem(
+      `civichero_points_${user.uid}`,
+      updatedPoints.toString(),
+    );
+    setUser((prev) => (prev ? { ...prev, points: updatedPoints } : null));
 
     return issueId;
   };
 
   // 4. Upvote / "I see this too" report handler
   const upvoteIssue = async (issueId: string) => {
-    if (!user) throw new Error('User must be logged in to upvote');
+    if (!user) throw new Error("User must be logged in to upvote");
 
-    const issueRef = doc(db, 'issues', issueId);
-    const targetIssue = issues.find(i => i.id === issueId);
+    const issueRef = doc(db, "issues", issueId);
+    const targetIssue = issues.find((i) => i.id === issueId);
     if (!targetIssue) return;
 
     const hasUpvoted = targetIssue.upvotedByUserIds.includes(user.uid);
@@ -217,49 +286,118 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Remove upvote
       await updateDoc(issueRef, {
         upvotes: increment(-1),
-        upvotedByUserIds: arrayRemove(user.uid)
+        upvotedByUserIds: arrayRemove(user.uid),
       });
     } else {
       // Add upvote
       await updateDoc(issueRef, {
         upvotes: increment(1),
-        upvotedByUserIds: arrayUnion(user.uid)
+        upvotedByUserIds: arrayUnion(user.uid),
       });
 
       // Increase user score slightly for participating
       const updatedPoints = user.points + 5;
-      localStorage.setItem(`civichero_points_${user.uid}`, updatedPoints.toString());
-      setUser(prev => prev ? { ...prev, points: updatedPoints } : null);
+      localStorage.setItem(
+        `civichero_points_${user.uid}`,
+        updatedPoints.toString(),
+      );
+      setUser((prev) => (prev ? { ...prev, points: updatedPoints } : null));
     }
   };
 
   // 5. Update issue status & append history
-  const updateIssueStatus = async (issueId: string, status: IssueStatus, notes: string) => {
-    const issueRef = doc(db, 'issues', issueId);
-    
+  const updateIssueStatus = async (
+    issueId: string,
+    status: IssueStatus,
+    notes: string,
+  ) => {
+    const issueRef = doc(db, "issues", issueId);
+
     const newEvent = {
       status,
       notes,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     await updateDoc(issueRef, {
       status,
-      history: arrayUnion(newEvent)
+      history: arrayUnion(newEvent),
     });
   };
 
+  // 6. Agentic Resolution Layer: gather nearby issues, ask the agent to plan the
+  // resolution, and persist the plan onto the issue document.
+  const resolveIssuePlan = async (issueId: string) => {
+    const target = issues.find((i) => i.id === issueId);
+    if (!target) throw new Error("Issue not found");
+
+    // Build the compact nearby-issues list (within 500m, same set excluded self).
+    const nearbyIssues = issues
+      .filter((i) => i.id !== issueId)
+      .map((i) => ({
+        ...i,
+        distanceMeters: Math.round(
+          distanceMeters(
+            target.latitude,
+            target.longitude,
+            i.latitude,
+            i.longitude,
+          ),
+        ),
+      }))
+      .filter((i) => i.distanceMeters <= 500)
+      .sort((a, b) => a.distanceMeters - b.distanceMeters)
+      .slice(0, 10)
+      .map((i) => ({
+        id: i.id,
+        category: i.category,
+        summary: i.summary,
+        status: i.status,
+        distanceMeters: i.distanceMeters,
+      }));
+
+    const res = await fetch("/api/agent/resolve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        issue: {
+          id: target.id,
+          category: target.category,
+          severity: target.severity,
+          summary: target.summary,
+          userNote: target.userNote,
+          address: target.address,
+          upvotes: target.upvotes,
+        },
+        nearbyIssues,
+      }),
+    });
+
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.error || "Agent planning failed");
+    }
+
+    const plan = (await res.json()) as Omit<AgentPlan, "generatedAt">;
+    const agentPlan: AgentPlan = { ...plan, generatedAt: Date.now() };
+
+    await updateDoc(doc(db, "issues", issueId), { agentPlan });
+  };
+
   return (
-    <AppContext.Provider value={{
-      user,
-      loadingUser,
-      issues,
-      loadingIssues,
-      createIssueReport,
-      upvoteIssue,
-      updateIssueStatus,
-      mapsKeyAvailable,
-    }}>
+    <AppContext.Provider
+      value={{
+        user,
+        loadingUser,
+        issues,
+        loadingIssues,
+        createIssueReport,
+        upvoteIssue,
+        updateIssueStatus,
+        resolveIssuePlan,
+        mapsKeyAvailable,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );
@@ -268,7 +406,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 export const useApp = () => {
   const context = useContext(AppContext);
   if (context === undefined) {
-    throw new Error('useApp must be used within an AppProvider');
+    throw new Error("useApp must be used within an AppProvider");
   }
   return context;
 };
