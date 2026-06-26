@@ -58,14 +58,19 @@ it the AI endpoints return deterministic **simulated** output (the app still wor
 ## Current blockers (need the human — see docs/status.md)
 1. **Firebase**: Anonymous Auth is DISABLED in project `neon-mountain-nwrl4` → the app cannot
    create users/reports until enabled. Console → Authentication → enable Anonymous; set
-   Firestore + Storage rules (read public, write requires auth).
+   Firestore + Storage rules (read public, write requires auth). Confirm with
+   `node scripts/verify-agent-flow.mjs` (checks auth → Firestore write → agent endpoint).
 2. **Deploy**: needs `gcloud auth login` + a billed GCP project, then
    `gcloud run deploy --source .` with the `VITE_*` build args. Dockerfile is ready.
 
 ## Next planned work
 Step 5 — impact dashboard + predictive hotspots. Step 6 — move points to Firestore + real
 leaderboard. Full plan in `docs/plan.md`; decisions in `docs/decisions.md`; lessons in
-`docs/lessons.md`.
+`docs/lessons.md`; **submission rules + checklist in `docs/submission.md`**.
+
+## Verification
+`node scripts/verify-agent-flow.mjs` — checks Anonymous Auth → authenticated Firestore write →
+local agent endpoint, printing PASS/FAIL with the exact fix for whatever is blocked.
 
 ## Workflow
 Plan before executing, keep `docs/` current (status, changelog, decisions, lessons), run

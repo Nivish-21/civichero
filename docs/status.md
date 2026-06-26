@@ -33,10 +33,12 @@
    passing `--build-arg`/substitutions for the `VITE_FIREBASE_*` + `VITE_GOOGLE_MAPS_API_KEY`,
    and set `GEMINI_API_KEY` as a runtime env/secret.
 
-## Verify the agent end-to-end (do once Firebase Auth is on)
-Run locally, submit a test report, open it, hit "Generate AI Action Plan" — confirm the card
-renders authority/priority/duplicate/draft. (Couldn't be clicked through yet because Anonymous
-Auth is off, so no user/report can be created.)
+## Verify the agent end-to-end (do once Firebase Auth + rules are set)
+Run `node scripts/verify-agent-flow.mjs` — it checks Anonymous Auth → authenticated Firestore
+write → the local agent endpoint and prints PASS/FAIL with the exact fix. Today it reports
+"Anonymous Auth is DISABLED" (the current blocker). After enabling auth + rules, start the app
+(`NODE_ENV=production PORT=8137 node dist/server.cjs`) and re-run for a full green; then click
+through in the browser: report → open issue → "Generate AI Action Plan".
 
 ## Next planned work (see docs/plan.md)
 - Step 5 — impact dashboard + predictive hotspots.

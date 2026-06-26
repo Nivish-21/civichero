@@ -37,3 +37,13 @@
 - **Agent docs**: added root `CLAUDE.md` + `AGENTS.md`. Rewrote `docs/status.md` as the resume
   source of truth.
 - Verified: `npm run lint` + `npm run build` green; Firebase config injected from `.env` into bundle.
+
+## 2026-06-26 (cont.) — neat handoff: plan, submission, verify script
+- Rewrote docs/plan.md clean (removed superseded Next.js/Genkit cruft; reflects real progress).
+- Added docs/submission.md — binding submission rules, deliverables, evaluation matrix,
+  BlockseBlock steps, pre-submit checklist.
+- Added scripts/verify-agent-flow.mjs — verifies Anonymous Auth → Firestore write → agent
+  endpoint. Currently reports the live blocker: Anonymous Auth DISABLED.
+- Confirmed (REST probe) Anonymous Auth still disabled (ADMIN_ONLY_OPERATION) — cannot be
+  enabled without project credentials; documented the 1-step fix.
+- CLAUDE.md + status.md reference the verify script + submission doc.

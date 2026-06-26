@@ -1,167 +1,65 @@
-# V2Ship — BlockseBlock Hackathon Plan
+# Plan — Community Hero (civichero)
+
+BlockseBlock hackathon, Track 2. **Deadline: 2026-06-29 14:00.** Live state in `docs/status.md`;
+decisions in `docs/decisions.md`; submission steps in `docs/submission.md`.
 
 ## Goal
-Win-targeted submission for the BlockseBlock hackathon. Build a functional,
-agentic, Google-Cloud-deployed solution before the deadline.
+A functional, visibly *agentic*, Google-Cloud-deployed civic issue platform that scores on the
+evaluation matrix — especially the 40% on Agentic Depth + Innovation.
 
-## Hard constraints (from the brief)
-- **Deadline: 29 Jun 2026, 2:00 PM.** Window opened 22 Jun 3pm. Today: 26 Jun. ~3 days left. Late = rejected.
-- Final app **must** be deployed on **Google Cloud** (AI Studio one-click → Cloud Run qualifies).
-- Deliverables: (1) live deployed link, (2) public GitHub repo, (3) Google Doc writeup
-  (problem statement, solution overview, key features, technologies, Google technologies used).
-- Submit **only** via BlockseBlock dashboard. Final Submit is irreversible — no edits after.
-- AI tools / open-source / public resources allowed and encouraged; work must be our own.
-
-## Evaluation matrix (drives every decision)
+## Evaluation matrix (drives priorities)
 | Criterion | Weight |
 |---|---|
 | Problem Solving & Impact | 20% |
-| Agentic Depth | 20% |
-| Innovation & Creativity | 20% |
+| **Agentic Depth** | **20%** |
+| **Innovation & Creativity** | **20%** |
 | Usage of Google Technologies | 15% |
 | Product Experience & Design | 10% |
 | Technical Implementation | 10% |
 | Completeness & Usability | 5% |
 
-→ 40% on Agentic Depth + Innovation. The build must be visibly *agentic*, not a prompt wrapper.
+## Architecture (current — see decisions.md D1–D4)
+Origin: **AI Studio Build Mode** (satisfies the Google-Cloud requirement + scores Google tech).
+Stack: **React + Vite + Express (`server.ts`) + Firebase (Auth/Firestore/Storage) + Gemini +
+Google Maps**, deployed to **Cloud Run**. Reuses the Open311 data model + Ushahidi category
+taxonomy (not a forked legacy codebase).
 
-## Decision 1 — Architecture
-> **UPDATED by D4 (decisions.md):** origin is **AI Studio Build Mode**, stack is **React (Vite) +
-> Firebase + Gemini + Maps**, deploy is **AI Studio Publish → Cloud Run (free Starter tier)**.
-> The Next.js/Genkit/gcloud detail below is superseded; kept for history.
+## Progress
 
-- AI Studio = **deploy vehicle + UI scaffold on-ramp + Gemini API key source**, NOT the whole architecture.
-- Agent engine = **Genkit** (Google's open-source TS agent framework — flows, tools, multi-step
-  orchestration → scores Agentic Depth on behavior). Lives inside the Next.js app: one language,
-  one deploy. ADK held in reserve as a multi-agent flex if ahead of schedule. (See decisions.md.)
-- Frontend + BFF = **Next.js (App Router)** — design points (10%) + clean Cloud Run deploy.
-- Model = **Gemini** (multimodal — vision for image/video intake, function-calling for tools).
-- Data = **Firestore** (reports, status lifecycle, votes). Files = **Cloud Storage** (images/video).
-- Map = **Google Maps Platform** (geo + pins → scores Google tech 15%).
-- Deploy = **Cloud Run** (single Next.js service). Satisfies mandatory Google Cloud.
-- Google-tech surface scored: Gemini + Genkit + Maps Platform + Cloud Run + Firestore + Cloud Storage.
+### Done
+- [x] Track + architecture chosen; app generated in AI Studio Build Mode, exported, pushed to
+  `github.com/Nivish-21/civichero` (public).
+- [x] **Cloud Run deploy bugs fixed** (`server.ts`: `process.env.PORT`; removed CJS
+  `import.meta.url` crash). Dockerfile added. Prod start verified locally.
+- [x] **Vertical slice already present** (from Build Mode): photo intake + Gemini Vision triage
+  (`/api/triage`), Firestore real-time feed, map, issue detail, status timeline, upvotes, points.
+- [x] **Step 4 — Agentic Resolution Layer** (`/api/agent/resolve`): routes to authority, detects
+  duplicates (haversine ≤500m), scores priority + SLA, drafts a complaint, recommends actions;
+  "AI Action Plan" card on the detail page. Degrades to simulated output without a Gemini key.
+- [x] Security/handoff: Firebase config → env vars, history purged, `.gitignore` hardened,
+  `CLAUDE.md`/`AGENTS.md` added, `scripts/verify-agent-flow.mjs` added.
 
-## Decision 2 — Track: **Track 2, Community Hero (Hyperlocal Problem Solver)**
-Chosen over Track 1 (Last-Minute Life Saver) because:
-1. Richer open-source base to reuse (Open311 standard, FixMyStreet, Ushahidi, Mark-a-Spot).
-2. Natural, broad Google-tech surface (Maps + Gemini Vision + Cloud Run + Firebase) → the 15%.
-3. Agentic Depth is real and demoable: photo → classify → geolocate → route to authority →
-   track → predict hotspots. Multi-step autonomy, not faked reminders.
-4. Strong impact + innovation narrative; Track 1 is the most saturated hackathon category.
+### Blocked on the human (see docs/status.md)
+- [ ] **Enable Firebase Anonymous Auth** + set Firestore/Storage rules. Until done the app can't
+  create users/reports. Verify with `node scripts/verify-agent-flow.mjs`.
+- [ ] **Deploy to Cloud Run**: `gcloud auth login` + billed project, then `gcloud run deploy`.
 
-### Open-source reuse strategy (borrow schema, not legacy codebase)
-- **Open311 / GeoReport v2** — adopt its data model + service-request lifecycle. Don't reinvent it.
-- **Ushahidi / FixMyStreet** — category taxonomy + reporting-flow patterns.
-- **Leaflet + OpenStreetMap** OR **Google Maps Platform** for geo/mapping (Maps = scores Google tech).
-- **Do NOT fork** FixMyStreet (Perl) or Mark-a-Spot (Drupal) wholesale — fights Cloud Run + 3-day window.
-- Build fresh on a Cloud-Run-clean stack (Next.js or Python FastAPI + ADK agent service).
+### Remaining build work
+- [ ] **Step 5 — Impact dashboard + predictive hotspots.** Counts by category/status/area, avg
+  resolution time; a predictive agent over all issues surfacing recurring hotspots.
+- [ ] **Step 6 — Real gamification.** Move points from `localStorage` → Firestore `users`
+  collection; cross-user leaderboard.
+- [ ] **Polish:** impeccable design pass (mandatory before "done"), README, restrict Firebase
+  rules + API key.
 
-## Proposed agentic feature core (the 40%)
-- [ ] Multimodal intake: citizen uploads photo/video of an issue.
-- [ ] Gemini Vision agent: auto-categorize (pothole / leak / streetlight / waste / etc.) + severity.
-- [ ] Geo agent: extract/confirm location, reverse-geocode, map pin.
-- [ ] Routing agent: determine responsible authority (Open311-style), draft + dispatch report.
-- [ ] Tracking: real-time status lifecycle (reported → acknowledged → in-progress → resolved).
-- [ ] Community verification + gamification (upvote/confirm, points).
-- [ ] Impact dashboard + predictive hotspot insights (agent over historical reports).
-
-## Build steps (expanded)
-
-### Step 0 — Approved ✅ (architecture + Track 2)
-
-### Step 1 (REVISED per D4) — AI Studio Build Mode: generate + deploy + GitHub export
-Goal: a working Community-Hero v1 live on Cloud Run via AI Studio's free Starter deploy, with the
-code in GitHub, before deep feature work. De-risks the deploy on day 1 with zero billing setup.
-- [ ] 1a. **[USER]** AI Studio → Build Mode → paste the provided prompt → generate v1 app.
-- [ ] 1b. **[USER]** Wire/confirm Firebase backend when prompted (Auth + Firestore + Storage).
-- [ ] 1c. **[USER]** Publish (Starter tier) → capture the live Cloud Run URL. ← deploy de-risked.
-- [ ] 1d. **[USER]** Export to GitHub → send repo URL.
-- [ ] 1e. **[ME]** Clone repo, bring docs/ in, verify it builds locally, confirm structure.
-  ← Step 1 done-gate.
-Superseded sub-steps (old Next.js path): create-next-app / Genkit / Dockerfile / gcloud — DROPPED.
-
-### Step 2 — Multimodal intake + Gemini Vision categorization (first vertical slice)
-- [ ] 2a. Upload UI: citizen submits photo/video + optional note. Store file in Cloud Storage.
-- [ ] 2b. Genkit flow: Gemini Vision → `{category, severity, summary, confidence}` (structured output).
-  Categories from Open311/Ushahidi taxonomy (pothole, water leak, streetlight, waste, etc.).
-- [ ] 2c. Persist report to Firestore with Open311-style schema. Show classification back to user.
-- [ ] 2d. Redeploy; verify slice works on the live URL. ← demoable end-to-end here.
-
-### Step 3 — Geo + map + report lifecycle
-- [ ] 3a. Capture gelocation (device GPS / map pin). Reverse-geocode via Maps Platform.
-- [ ] 3b. Public map view: all reports as pins, colored by category/status.
-- [ ] 3c. Report detail page + status lifecycle (reported → acknowledged → in-progress → resolved).
-- [ ] 3d. Open311 GeoReport v2 field alignment (service_code, status, requested_datetime, lat/long).
-
-### Step 4 — Agentic routing + tracking + community layer
-- [ ] 4a. **Routing agent** (Genkit, multi-step): from category + location, determine responsible
-  authority/department, draft the formal report text, log dispatch intent. This is the Agentic Depth core.
-- [ ] 4b. Community verification: upvote/confirm a report; dedupe near-duplicate reports (agent-assisted).
-- [ ] 4c. Gamification: citizen points for reporting/verifying; simple leaderboard.
-
-### Step 5 — Impact dashboard + predictive insights
-- [ ] 5a. Dashboard: counts by category/status/area, resolution times, before/after.
-- [ ] 5b. **Predictive agent**: over historical reports, surface hotspots / likely-recurring issues.
-
-### Step 6 — Polish + deliverables
-- [ ] 6a. Design pass through **impeccable** gate (mandatory before "done"). Mobile-first.
-- [ ] 6b. Lint + format (Prettier). Type-check clean.
-- [ ] 6c. GitHub README (setup, architecture, Google tech used).
-- [ ] 6d. Project-description Google Doc: problem statement, solution overview, key features,
-  technologies, Google technologies. Set "anyone with link" access.
-- [ ] 6e. Final production deploy; verify all three links live + stable.
-
-### Step 7 — Submission (IRREVERSIBLE)
-- [ ] 7a. Verify deployed link, GitHub link, Google Doc link all public + working.
-- [ ] 7b. BlockseBlock: Create Project → select Track 2 → paste links → toggles → **Final Submit**.
-  Only when fully satisfied. No edits after.
-
-## Credentials needed from user (blockers for deploy, Step 1e/1f)
-1. `gcloud auth login` + a Google Cloud **project with billing enabled**.
-2. **Gemini API key** (AI Studio) — for Genkit/Gemini calls.
-3. (Later) **Google Maps Platform API key** — for Step 3 maps/geocoding.
-Everything before deploy (1a–1d) I can build now without these.
+### Deliverables (Step 7 — see docs/submission.md)
+- [ ] Live Cloud Run link (public, stable through judging).
+- [x] Public GitHub repo.
+- [ ] Project-description Google Doc (link-shared).
+- [ ] Final Submit on BlockseBlock (irreversible).
 
 ## Risks
-- 3-day window: scope must stay a working vertical slice end-to-end before adding breadth.
-- Irreversible Final Submit: deploy + all three links verified live before submitting.
-- ADK + Cloud Run deploy unknowns: de-risk with a deploy smoke-test in Step 1 before building features.
-
-## Status
-AWAITING APPROVAL on Decision 1 (architecture) + Decision 2 (Track 2). No code until approved.
-
----
-
-## Step 4 (NEW) — Agentic Resolution Layer  ← the 40% differentiator
-**Why:** current AI = one Gemini Vision classification. To score Agentic Depth (20%) +
-Innovation (20%), add a multi-step, context-aware agent that ACTS on a reported issue.
-
-**Server: new endpoint `/api/agent/resolve`** (Gemini, structured output). Input: the issue
-(category, severity, summary, location/address) + a compact list of existing nearby issues.
-Agent produces:
-- `authority`: responsible department + one-line justification (e.g. Roads Dept, Water Board).
-- `duplicateOf`: id of a likely duplicate among nearby issues, or null (dedup reasoning).
-- `priorityScore` (0-100) + suggested SLA days, from severity + upvotes + category.
-- `draftReport`: a formal, ready-to-send complaint text citing the issue specifics.
-- `recommendedActions`: 2-3 concrete next steps.
-
-**Client:**
-- [ ] "AI Action Plan" panel on IssueDetailPage showing authority, priority, duplicate flag,
-  draft report (copyable), recommended actions.
-- [ ] Trigger after triage in the report flow (and a re-run button on detail).
-- [ ] Persist the agent output on the issue doc (new optional field `agentPlan`).
-
-**Done-gate:** report an issue locally → agent returns a routed authority + draft + priority,
-rendered on the detail page; verified end-to-end (simulated gracefully without a key).
-
-## Step 5 (NEW, follow-up) — Impact dashboard + predictive hotspots
-- [ ] Dashboard: counts by category/status/area, avg resolution time, before/after.
-- [ ] Predictive agent over all issues → recurring hotspots / likely-next-issue areas.
-
-## Step 6 (NEW, follow-up) — Real gamification
-- [ ] Move points from localStorage → Firestore `users` collection; real leaderboard.
-
-## Known weaknesses to fix before submission
-- Firebase config (incl. web apiKey) is in the public repo (public-by-design, but LOCK Firestore
-  + Storage rules; restrict the API key in console).
-- Points are client-local only (Step 6 fixes).
+- Irreversible Final Submit — verify all three links live first.
+- 3-day window — keep a working end-to-end slice before adding breadth.
+- Starter-tier deploy was abandoned (managed black box failed); we deploy our own container.
+- Mentor session (24 Jun) passed; check BlockseBlock for a recording with judge hints.
