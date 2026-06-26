@@ -47,3 +47,12 @@
 - Confirmed (REST probe) Anonymous Auth still disabled (ADMIN_ONLY_OPERATION) — cannot be
   enabled without project credentials; documented the 1-step fix.
 - CLAUDE.md + status.md reference the verify script + submission doc.
+
+## 2026-06-26 (cont.) — new Firebase project + agent flow VERIFIED
+- AI Studio Starter project `neon-mountain-nwrl4` is a managed sandbox (no owner rights) — abandoned.
+- Created owned project `civichero-84074`; `.env` repointed (config now in env vars, so it was a
+  drop-in swap). Enabled Anonymous Auth; deployed Firestore rules (public read, auth write) via
+  the Firebase Rules API (needs `x-goog-user-project` header + gcloud token).
+- `scripts/verify-agent-flow.mjs` runs GREEN: anon auth → Firestore write → agent endpoint.
+- Storage deferred (needs Blaze); app falls back to inline base64. Deploy deferred (needs billing).
+- Updated CLAUDE.md + docs/status.md for handoff. gcloud authed as nivishnick2004.

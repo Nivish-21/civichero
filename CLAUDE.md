@@ -55,13 +55,16 @@ it the AI endpoints return deterministic **simulated** output (the app still wor
   `import.meta.url` is undefined and crashes startup. Use `process.cwd()`.
 - Firebase web API keys are public; never treat them as secrets. The real secret is `GEMINI_API_KEY`.
 
-## Current blockers (need the human — see docs/status.md)
-1. **Firebase**: Anonymous Auth is DISABLED in project `neon-mountain-nwrl4` → the app cannot
-   create users/reports until enabled. Console → Authentication → enable Anonymous; set
-   Firestore + Storage rules (read public, write requires auth). Confirm with
-   `node scripts/verify-agent-flow.mjs` (checks auth → Firestore write → agent endpoint).
-2. **Deploy**: needs `gcloud auth login` + a billed GCP project, then
-   `gcloud run deploy --source .` with the `VITE_*` build args. Dockerfile is ready.
+## Firebase (DONE — see docs/status.md)
+Uses the **owned** project `civichero-84074` (the AI Studio `neon-mountain-nwrl4` was a managed
+sandbox, abandoned). Anonymous Auth enabled, Firestore rules deployed, agent flow verified green.
+`.env` is set locally. For live AI, add a real `GEMINI_API_KEY` to `.env` (else simulated mode).
+
+## Remaining blockers (need billing / the human)
+1. **Storage + Cloud Run deploy** need the project on the **Blaze (paid) plan**. Then
+   `gcloud run deploy --source .` with the `VITE_*` build args + `GEMINI_API_KEY` runtime env.
+   Dockerfile is ready. (Without Storage, image uploads fall back to inline base64 in Firestore.)
+2. **Maps**: add `VITE_GOOGLE_MAPS_API_KEY` to `.env` for the live map.
 
 ## Next planned work
 Step 5 — impact dashboard + predictive hotspots. Step 6 — move points to Firestore + real

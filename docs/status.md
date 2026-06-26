@@ -5,53 +5,51 @@
 **Repo:** https://github.com/Nivish-21/civichero (public)
 **Local:** /Users/nivish/development/civichero
 
-> Single source of truth for resuming. Read CLAUDE.md for architecture/commands.
+> Resume here. Read CLAUDE.md for architecture/commands. The agent flow is VERIFIED green.
 
-## Where we are
-- **Track 2 — Community Hero.** App scaffolded in AI Studio Build Mode, exported here, now
-  developed locally. React + Vite + Express + Firebase + Gemini + Maps → deploys to Cloud Run.
-- **Builds and runs.** `npm run build` + prod start verified locally on an injected PORT.
-- **Cloud Run deploy bugs fixed** (server.ts: `process.env.PORT`; removed CJS `import.meta.url`
-  crash). Dockerfile ready.
-- **Step 4 (Agentic Resolution Layer) shipped** — `/api/agent/resolve`: routes to authority,
-  detects duplicates, scores priority + SLA, drafts a complaint, recommends actions. "AI Action
-  Plan" card on the issue detail page. Degrades to simulated output without a Gemini key.
-- **Security pass done.** No real secret was ever committed (Gemini key never in repo). Firebase
-  web config moved to `VITE_FIREBASE_*` env vars; `firebase-applet-config.json` removed and
-  purged from git history. `.gitignore` hardened.
+## VERIFIED working (this session)
+- New **owned** Firebase project **`civichero-84074`** (the old AI Studio `neon-mountain-nwrl4`
+  was a managed Starter-Tier sandbox — no owner rights, abandoned).
+- **Anonymous Auth enabled**, **Firestore rules deployed** (public read, auth-gated write on
+  `issues`). `.env` (gitignored) points at the new project.
+- **`node scripts/verify-agent-flow.mjs` → all green**: anon auth → Firestore write → agent
+  endpoint (`/api/agent/resolve` routes to authority, scores priority/SLA). Simulated output
+  until a Gemini key is set.
+- gcloud is authenticated as `nivishnick2004@gmail.com`, project set to `civichero-84074`.
 
-## Two blockers — need the human (nothing else is blocked on code)
-1. **Firebase (app is non-functional until done).** Anonymous Auth is DISABLED in project
-   `neon-mountain-nwrl4`. In console.firebase.google.com → that project:
-   - Authentication → Sign-in method → **enable Anonymous**.
-   - Firestore → Rules: `match /issues/{id} { allow read: if true; allow create, update: if request.auth != null; }`
-   - Storage → Rules: under `match /issues/{p=**}` → `allow read: if true; allow write: if request.auth != null;`
-   - (Hygiene) restrict the Firebase web API key in GCP console.
-2. **Deploy to Cloud Run.** `gcloud auth login` + a billed GCP project (new accounts get $300
-   free; Cloud Run free tier ≈ $0). Then:
+## How the new session starts
+1. `cd /Users/nivish/development/civichero`; read CLAUDE.md.
+2. `.env` is already set (local, gitignored). `npm install` if needed, `npm run build`.
+3. Re-verify any time: start app (`NODE_ENV=production PORT=8137 node dist/server.cjs`) then
+   `node scripts/verify-agent-flow.mjs`.
+
+## Remaining work (priority order)
+1. **Live AI (optional but recommended):** put a real `GEMINI_API_KEY` in `.env` to replace the
+   simulated triage/agent output. Without it the app still works (simulated).
+2. **Browser click-through** (not done this session): submit a report → open it → "Generate AI
+   Action Plan" → confirm the card renders. A demo issue was being seeded via Firestore REST;
+   finish that or just use the report form in the running app.
+3. **Maps:** add `VITE_GOOGLE_MAPS_API_KEY` to `.env` (build-time) for the live map.
+4. **Storage:** needs the **Blaze (paid) plan** — currently the app falls back to inline base64
+   in Firestore (works for small images; watch the 1 MiB doc limit). Upgrade to Blaze for real
+   Storage (also needed for Cloud Run billing).
+5. **Deploy to Cloud Run:** project needs billing (Blaze). Then
    `gcloud run deploy civichero --source . --region asia-south1 --allow-unauthenticated`
-   passing `--build-arg`/substitutions for the `VITE_FIREBASE_*` + `VITE_GOOGLE_MAPS_API_KEY`,
-   and set `GEMINI_API_KEY` as a runtime env/secret.
+   passing the `VITE_FIREBASE_*` (+ `VITE_GOOGLE_MAPS_API_KEY`) build args and `GEMINI_API_KEY`
+   as a runtime env/secret. Dockerfile is ready.
+6. **Step 5** — impact dashboard + predictive hotspots. **Step 6** — points to Firestore +
+   leaderboard. Then design polish (impeccable), README, project-description Google Doc.
+7. **Submit** — see `docs/submission.md` (checklist + BlockseBlock steps; irreversible Final Submit).
 
-## Verify the agent end-to-end (do once Firebase Auth + rules are set)
-Run `node scripts/verify-agent-flow.mjs` — it checks Anonymous Auth → authenticated Firestore
-write → the local agent endpoint and prints PASS/FAIL with the exact fix. Today it reports
-"Anonymous Auth is DISABLED" (the current blocker). After enabling auth + rules, start the app
-(`NODE_ENV=production PORT=8137 node dist/server.cjs`) and re-run for a full green; then click
-through in the browser: report → open issue → "Generate AI Action Plan".
+## Notes / gotchas (operational)
+- Don't leave a backgrounded server (`node dist/server.cjs &`) running at the end of a shell
+  command — it keeps the command alive and hits the 2-min timeout. Start+test+kill in one
+  command, or use a real background runner.
+- `UID` is a read-only special var in zsh — use a different name when seeding Firestore.
+- Firebase Rules API needs the `x-goog-user-project: civichero-84074` header with a gcloud token.
 
-## Next planned work (see docs/plan.md)
-- Step 5 — impact dashboard + predictive hotspots.
-- Step 6 — move points from localStorage to Firestore; real cross-user leaderboard.
-- Polish: impeccable design pass; README; project-description Google Doc; restrict Firebase rules.
-
-## Deliverable checklist (before Final Submit — irreversible)
-- [ ] Live Cloud Run link (public, stays up through judging).
+## Deliverable checklist (before Final Submit)
+- [ ] Live Cloud Run link (public, stable).
 - [x] Public GitHub repo.
-- [ ] Project-description Google Doc (problem, solution, features, tech, Google tech) — link-shared.
-- [ ] Submit via BlockseBlock → select Track 2 → paste links → Final Submit.
-
-## Risks
-- Irreversible Final Submit — verify all 3 links live first.
-- Firebase rules: keep writes auth-gated (not wide open).
-- Mentor session (24 Jun) passed; check BlockseBlock for a recording with judge hints.
+- [ ] Project-description Google Doc (link-shared).
+- [ ] BlockseBlock → Track 2 → paste links → Final Submit.
