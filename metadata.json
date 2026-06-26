@@ -1,0 +1,6 @@
+{
+  "name": "Community Hero",
+  "description": "Mobile-first civic issue reporting and triage platform.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
