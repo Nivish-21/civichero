@@ -1,43 +1,55 @@
-# Status — V2Ship (BlockseBlock Hackathon)
+# Status — Community Hero (civichero)
 
 **Last updated:** 2026-06-26
-**Deadline:** 2026-06-29 14:00 (hard). ~3 days left.
+**Deadline:** 2026-06-29 14:00 (hard).
+**Repo:** https://github.com/Nivish-21/civichero (public)
+**Local:** /Users/nivish/development/civichero
 
-## Current state
-- Planning approved (Track 2). **Deploy path pivoted to AI Studio Build Mode (free Starter).** See D4.
-- Toolchain verified: node 24, python 3.12, uv, gcloud 565, gh (authed: Nivish-21), docker.
-- Hand-scaffolded Next.js exists locally but is **SUPERSEDED** by the AI Studio React export (D4).
-  Not pushed anywhere. Will be replaced when the AI Studio GitHub export lands.
+> Single source of truth for resuming. Read CLAUDE.md for architecture/commands.
 
-## Track
-**Track 2 — Community Hero (Hyperlocal Problem Solver).**
+## Where we are
+- **Track 2 — Community Hero.** App scaffolded in AI Studio Build Mode, exported here, now
+  developed locally. React + Vite + Express + Firebase + Gemini + Maps → deploys to Cloud Run.
+- **Builds and runs.** `npm run build` + prod start verified locally on an injected PORT.
+- **Cloud Run deploy bugs fixed** (server.ts: `process.env.PORT`; removed CJS `import.meta.url`
+  crash). Dockerfile ready.
+- **Step 4 (Agentic Resolution Layer) shipped** — `/api/agent/resolve`: routes to authority,
+  detects duplicates, scores priority + SLA, drafts a complaint, recommends actions. "AI Action
+  Plan" card on the issue detail page. Degrades to simulated output without a Gemini key.
+- **Security pass done.** No real secret was ever committed (Gemini key never in repo). Firebase
+  web config moved to `VITE_FIREBASE_*` env vars; `firebase-applet-config.json` removed and
+  purged from git history. `.gitignore` hardened.
 
-## Architecture (locked, post-pivot)
-**Origin: AI Studio Build Mode.** Stack: React (Vite) + Firebase (Auth/Firestore/Storage) +
-Gemini (multimodal) + Google Maps Platform. Deploy: AI Studio Publish → Cloud Run (Starter, FREE).
-Repo: AI Studio GitHub export. Genkit TBD post-export.
+## Two blockers — need the human (nothing else is blocked on code)
+1. **Firebase (app is non-functional until done).** Anonymous Auth is DISABLED in project
+   `neon-mountain-nwrl4`. In console.firebase.google.com → that project:
+   - Authentication → Sign-in method → **enable Anonymous**.
+   - Firestore → Rules: `match /issues/{id} { allow read: if true; allow create, update: if request.auth != null; }`
+   - Storage → Rules: under `match /issues/{p=**}` → `allow read: if true; allow write: if request.auth != null;`
+   - (Hygiene) restrict the Firebase web API key in GCP console.
+2. **Deploy to Cloud Run.** `gcloud auth login` + a billed GCP project (new accounts get $300
+   free; Cloud Run free tier ≈ $0). Then:
+   `gcloud run deploy civichero --source . --region asia-south1 --allow-unauthenticated`
+   passing `--build-arg`/substitutions for the `VITE_FIREBASE_*` + `VITE_GOOGLE_MAPS_API_KEY`,
+   and set `GEMINI_API_KEY` as a runtime env/secret.
 
-## Active step
-**Step 1 (in progress) — code exported, deploy bugs fixed, repo + deploy pending.**
-- App exported from AI Studio to `/Users/nivish/development/civichero` (React + Express + Vite,
-  Gemini vision triage, Firebase + Maps deps). Also imported into Antigravity.
-- FIXED two Cloud Run deploy blockers in server.ts (hardcoded PORT; import.meta.url-in-CJS crash).
-  Verified prod start locally on injected PORT. Committed locally (not pushed).
-- Brought docs/ into the civichero repo. Added docs/lessons.md.
-- PENDING: (1) push to GitHub (mandatory deliverable), (2) choose deploy path (see below).
+## Verify the agent end-to-end (do once Firebase Auth is on)
+Run locally, submit a test report, open it, hit "Generate AI Action Plan" — confirm the card
+renders authority/priority/duplicate/draft. (Couldn't be clicked through yet because Anonymous
+Auth is off, so no user/report can be created.)
 
-## Blocked on user (the AI Studio steps)
-1. AI Studio Build Mode: paste the provided prompt, generate the app.
-2. Publish (Starter tier) → get live Cloud Run URL.
-3. Export to GitHub → send me the repo URL.
-(Gemini API key created inside AI Studio; no gcloud/billing needed.)
+## Next planned work (see docs/plan.md)
+- Step 5 — impact dashboard + predictive hotspots.
+- Step 6 — move points from localStorage to Firestore; real cross-user leaderboard.
+- Polish: impeccable design pass; README; project-description Google Doc; restrict Firebase rules.
 
-## Next steps
-1. User runs the AI Studio Build Mode flow (prompt provided in chat).
-2. User sends me the GitHub repo URL + the live Cloud Run URL.
-3. I clone the repo, bring docs/ in, build Step 2 features (Vision categorization slice).
+## Deliverable checklist (before Final Submit — irreversible)
+- [ ] Live Cloud Run link (public, stays up through judging).
+- [x] Public GitHub repo.
+- [ ] Project-description Google Doc (problem, solution, features, tech, Google tech) — link-shared.
+- [ ] Submit via BlockseBlock → select Track 2 → paste links → Final Submit.
 
-## Known issues / risks
-- Irreversible Final Submit — verify all 3 links before submitting.
-- 3-day window — keep to a working vertical slice before adding breadth.
-- Mentor session (24 Jun) passed; chase recording on BlockseBlock for judge hints.
+## Risks
+- Irreversible Final Submit — verify all 3 links live first.
+- Firebase rules: keep writes auth-gated (not wide open).
+- Mentor session (24 Jun) passed; check BlockseBlock for a recording with judge hints.

@@ -11,3 +11,29 @@
   (React + Firebase + Gemini + Maps), free Starter-tier Cloud Run deploy, GitHub export.
   Next.js scaffold superseded. Why: matches mandated Google Cloud deploy + mentor guidance, removes
   the GCP billing blocker, scores higher on Usage of Google Technologies.
+
+## 2026-06-26 (cont.) — civichero (AI Studio export, local dev)
+- **Fixed Cloud Run deploy** (server.ts): read process.env.PORT; removed
+  import.meta.url/fileURLToPath CJS startup crash. Verified prod start locally.
+- **Pushed public repo**: github.com/Nivish-21/civichero. Added Dockerfile + .dockerignore.
+- **Step 4 — Agentic Resolution Layer** (the 40% differentiator):
+  - /api/agent/resolve (Gemini, structured output) + deterministic simulation fallback.
+  - resolveIssuePlan() in AppContext (nearby via haversine <=500m) persists agentPlan.
+  - "AI Action Plan" card on IssueDetailPage: authority, priority gauge, duplicate flag,
+    recommended actions, copyable draft complaint.
+  - Files: server.ts, src/types.ts, src/context/AppContext.tsx, src/components/IssueDetailPage.tsx.
+- **Found (user action): Firebase Anonymous Auth disabled** in project neon-mountain-nwrl4 →
+  app can't create users/reports until enabled in console. Firestore rules also block reads
+  without auth. Must fix before the live app works.
+
+## 2026-06-26 (cont.) — handoff hardening
+- **Security audit**: scanned working tree + full git history. No real secret ever committed
+  (Gemini key only ever a placeholder). Only the Firebase WEB api key was present (public by design).
+- **Firebase config → env vars**: `src/lib/firebase.ts` now reads `VITE_FIREBASE_*`; added
+  `src/vite-env.d.ts` typings; removed `firebase-applet-config.json` and **purged it from git
+  history** (git-filter-repo) + force-pushed. Local `.env` (gitignored) holds the public values.
+- **.gitignore** hardened (env/secrets/build/editor). **.env.example** rewritten with all vars.
+- **Dockerfile**: added `VITE_FIREBASE_*` build args (Vite bakes them at build time).
+- **Agent docs**: added root `CLAUDE.md` + `AGENTS.md`. Rewrote `docs/status.md` as the resume
+  source of truth.
+- Verified: `npm run lint` + `npm run build` green; Firebase config injected from `.env` into bundle.

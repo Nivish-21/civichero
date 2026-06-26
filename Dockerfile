@@ -7,11 +7,27 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-# NOTE: VITE_GOOGLE_MAPS_API_KEY is baked into the client bundle at build time.
-# Pass it as a build arg when the map is needed:
-#   gcloud builds ... --substitutions, or docker build --build-arg.
+# Vite bakes VITE_* vars into the client bundle at build time, so they must be
+# present here. Firebase web values are public by design; pass them (and the
+# Maps key) as --build-arg, e.g.:
+#   docker build --build-arg VITE_FIREBASE_API_KEY=... --build-arg VITE_FIREBASE_PROJECT_ID=... .
+# For Cloud Run via `gcloud run deploy --source`, set them as substitutions.
+ARG VITE_FIREBASE_API_KEY=""
+ARG VITE_FIREBASE_AUTH_DOMAIN=""
+ARG VITE_FIREBASE_PROJECT_ID=""
+ARG VITE_FIREBASE_STORAGE_BUCKET=""
+ARG VITE_FIREBASE_MESSAGING_SENDER_ID=""
+ARG VITE_FIREBASE_APP_ID=""
+ARG VITE_FIREBASE_FIRESTORE_DB_ID=""
 ARG VITE_GOOGLE_MAPS_API_KEY=""
-ENV VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY}
+ENV VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY} \
+    VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN} \
+    VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID} \
+    VITE_FIREBASE_STORAGE_BUCKET=${VITE_FIREBASE_STORAGE_BUCKET} \
+    VITE_FIREBASE_MESSAGING_SENDER_ID=${VITE_FIREBASE_MESSAGING_SENDER_ID} \
+    VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID} \
+    VITE_FIREBASE_FIRESTORE_DB_ID=${VITE_FIREBASE_FIRESTORE_DB_ID} \
+    VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY}
 RUN npm run build
 
 FROM node:24-slim AS runner

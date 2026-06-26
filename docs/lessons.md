@@ -20,3 +20,11 @@ Cloud Run deploy with "container failed to start and listen on PORT=3000".
 **Rule:** For any AI Studio Build Mode export deployed to Cloud Run, before deploying: (a) ensure
 the server reads `process.env.PORT`, and (b) grep for `import.meta.url` / `fileURLToPath` in code
 that gets bundled to CJS — remove or guard it.
+
+## 2026-06-26 — Firebase web key is not a secret; refactor to env anyway for clean handoff
+AI Studio export hardcodes Firebase web config in `firebase-applet-config.json` (committed).
+Firebase web API keys are PUBLIC by design (identify project, not authorize) — not a leak.
+The real secret (`GEMINI_API_KEY`) was never committed. For a clean repo, moved config to
+`VITE_FIREBASE_*` env (`import.meta.env`, typed via `src/vite-env.d.ts`), gitignored `.env`,
+purged the old JSON from history with git-filter-repo. Vite bakes `VITE_*` at build → Docker
+needs them as `--build-arg`.
