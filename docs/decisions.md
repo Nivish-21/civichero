@@ -39,3 +39,16 @@ Agentic Depth comes from multi-step flow behavior regardless of framework.
 **Reasoning:** Legacy stacks fight the Cloud Run + Gemini + Next.js flow and the 3-day window.
 Borrow the proven Open311 GeoReport v2 data model + Ushahidi category taxonomy; build fresh on
 a Cloud-Run-clean stack.
+
+## D5 — Hosting on Cloud Run + media on Firebase Storage (enable Blaze)
+**Date:** 2026-06-26
+**Decision:** Host on **Cloud Run** (mandated: brief requires Google Cloud; app has an Express
+server so static hosts don't fit). Store photos/videos on **Firebase Storage**.
+**Billing:** Both require the project on the **Blaze** plan. This is unavoidable for the deploy,
+but free in practice — $300 new-account credit + always-free tiers (Cloud Run 2M req/mo,
+Storage 5GB, Firestore 1GB) → ≈ $0 for a demo. Just needs a card on file.
+**Rejected:** MongoDB free tier — wrong tool for binary blobs, needless second DB. Base64-in-
+Firestore is only a stopgap (1 MiB doc limit; no video). Cloudinary free tier (25GB) is a fine
+media-only alternative but pointless since billing is required for Cloud Run anyway.
+**Follow-ups:** confirm ReportIssueForm uses `<input type=file accept=image/* capture=environment>`
+for direct camera capture; responsive audit at 375px in the design pass.
