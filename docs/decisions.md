@@ -52,3 +52,13 @@ Firestore is only a stopgap (1 MiB doc limit; no video). Cloudinary free tier (2
 media-only alternative but pointless since billing is required for Cloud Run anyway.
 **Follow-ups:** confirm ReportIssueForm uses `<input type=file accept=image/* capture=environment>`
 for direct camera capture; responsive audit at 375px in the design pass.
+
+## D5 update (2026-06-26) — $300 credit already spent
+Cost reality without the credit: the **always-free tiers** (not the credit) cover a demo —
+Cloud Run 2M req/mo, Firestore 50k reads/day, Storage 5GB — so the bill is still ≈ $0/month.
+BUT Cloud Run requires **billing ENABLED (a valid card attached)** regardless; enabling billing
+≠ being charged (only charged if you exceed free tiers, which a demo won't). Guardrails:
+set a **budget alert at $1** and deploy with **`--max-instances 2`**.
+If NO card can be attached → cannot deploy on Google Cloud (hard blocker, fails the requirement).
+Media-cost-zero option: route uploads to **Cloudinary free tier (25GB, no card)** instead of
+Firebase Storage; small code change; Cloud Run still needs billing enabled either way.
