@@ -18,117 +18,102 @@ evaluation matrix — especially the 40% on Agentic Depth + Innovation.
 | Technical Implementation | 10% |
 | Completeness & Usability | 5% |
 
-## Architecture (current — see decisions.md D1–D4)
-Origin: **AI Studio Build Mode** (satisfies the Google-Cloud requirement + scores Google tech).
-Stack: **React + Vite + Express (`server.ts`) + Firebase (Auth/Firestore/Storage) + Gemini +
-Google Maps**, deployed to **Cloud Run**. Reuses the Open311 data model + Ushahidi category
-taxonomy (not a forked legacy codebase).
+## Architecture
+Origin: **AI Studio Build Mode**. Stack: **React 19 + Vite 6 + TypeScript + Tailwind 4 +
+Express (`server.ts`) + Firebase (Auth/Firestore/Storage) + Gemini + Google Maps**, deployed
+to **Cloud Run**.
 
-## Progress
+---
 
-### Done
-- [x] Track + architecture chosen; app generated in AI Studio Build Mode, exported, pushed to
+## DONE
+
+- [x] Track + architecture chosen; app generated in AI Studio Build Mode, pushed to
   `github.com/Nivish-21/civichero` (public).
-- [x] **Cloud Run deploy bugs fixed** (`server.ts`: `process.env.PORT`; removed CJS
-  `import.meta.url` crash). Dockerfile added. Prod start verified locally.
-- [x] **Vertical slice already present** (from Build Mode): photo intake + Gemini Vision triage
-  (`/api/triage`), Firestore real-time feed, map, issue detail, status timeline, upvotes, points.
+- [x] Cloud Run deploy bugs fixed (`server.ts`: `process.env.PORT`; no `import.meta.url`). Dockerfile ready.
 - [x] **Step 4 — Agentic Resolution Layer** (`/api/agent/resolve`): routes to authority, detects
-  duplicates (haversine ≤500m), scores priority + SLA, drafts a complaint, recommends actions;
-  "AI Action Plan" card on the detail page. Degrades to simulated output without a Gemini key.
-- [x] Security/handoff: Firebase config → env vars, history purged, `.gitignore` hardened,
-  `CLAUDE.md`/`AGENTS.md` added, `scripts/verify-agent-flow.mjs` added.
+  duplicates (haversine ≤500m), scores priority + SLA, drafts complaint. "AI Action Plan" card
+  on IssueDetailPage. Degrades to simulated output without Gemini key.
+- [x] Security: Firebase config → env vars, history purged, `.gitignore` hardened.
+- [x] Firebase: owned project `civichero-84074`, Anonymous Auth enabled, Firestore rules deployed,
+  agent flow verified green (`node scripts/verify-agent-flow.mjs`).
+- [x] **Step 5 — 3-Role System + Gamification** (2026-06-27, pushed to GitHub):
+  - Roles: `citizen` | `cleaner` (`VITE_CLEANER_CODE`) | `admin` (`VITE_ADMIN_UID`)
+  - Flow: Reported → Acknowledged → Claimed → Pending Verification → Resolved (or back)
+  - Gemini Vision completion verification (`/api/verify-completion`)
+  - XP system, 10 achievements, animated unlock modal
+  - Dual-tab leaderboard (XP + report count), Firestore onSnapshot top-20
+  - In-memory rate limiting: 8 AI calls/IP/hr + exponential cooldown
+  - New: `src/lib/achievements.ts`, `AchievementModal`, `Leaderboard`, `VerificationPrompt`,
+    `RoleSelector`, `CleanerPanel`
+  - `npm run lint` + `npm run build` — both pass clean
 
-### Blocked on the human (see docs/status.md)
-- [ ] **Enable Firebase Anonymous Auth** + set Firestore/Storage rules. Until done the app can't
-  create users/reports. Verify with `node scripts/verify-agent-flow.mjs`.
-- [ ] **Deploy to Cloud Run**: `gcloud auth login` + billed project, then `gcloud run deploy`.
+---
 
-### Step 5 — 3-Role System + Gamification (2026-06-27)
+## BLOCKED ON HUMAN (DO FIRST)
 
-**Roles:** `citizen` (default) | `cleaner` (enter `VITE_CLEANER_CODE`) | `admin` (`VITE_ADMIN_UID`).
-**Verify threshold:** `VITE_VERIFY_THRESHOLD=2` citizen votes to resolve.
-**Dispute path:** 2 "still dirty" votes → status back to `Acknowledged`, `claimedByUid` cleared.
+- [ ] **Enable Blaze billing** on Firebase project `civichero-84074`.
+  Go to: Firebase console → project → Spark plan badge (bottom left) → Upgrade to Blaze.
+  Set a $5 budget alert. Required for Cloud Run + Storage.
+  Verify: `gcloud billing projects describe civichero-84074` → `billingEnabled: true`
 
-**New statuses:** `Claimed` | `Pending Verification` (inserted between `In Progress` and `Resolved`).
+---
 
-**Flow:**
-Reported → Acknowledged (auto at 3+ upvotes OR admin) → Claimed (cleaner) →
-Pending Verification (cleaner uploads photo + AI approves) →
-Resolved (2 citizen votes) OR back to Acknowledged (2 dirty votes).
+## Step 6 — Deploy to Cloud Run (agent can run this autonomously once billing is enabled)
 
-#### A — Types (`src/types.ts`)
-- [ ] Add `UserRole`, extend `IssueStatus` with `'Claimed' | 'Pending Verification'`
-- [ ] Extend `CivicIssue`: `claimedByUid?`, `claimedAt?`, `completionPhotoUrl?`, `aiCompletionVerified?`, `aiCompletionSummary?`, `verificationVotes: { clean: string[], dirty: string[] }`, `verificationThreshold: number`
-- [ ] Replace `UserProfile`: add `role`, `xp`, `achievements: Achievement[]`, `reportCount`, `cleanedCount`, `verifyCount`
-- [ ] Add `Achievement` + `AchievementId` types
+```bash
+gcloud run deploy civichero \
+  --source . \
+  --region asia-south1 \
+  --allow-unauthenticated \
+  --set-env-vars GEMINI_API_KEY=$GEMINI_API_KEY \
+  --build-env-vars VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY,\
+VITE_FIREBASE_AUTH_DOMAIN=$VITE_FIREBASE_AUTH_DOMAIN,\
+VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID,\
+VITE_FIREBASE_STORAGE_BUCKET=$VITE_FIREBASE_STORAGE_BUCKET,\
+VITE_FIREBASE_MESSAGING_SENDER_ID=$VITE_FIREBASE_MESSAGING_SENDER_ID,\
+VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID,\
+VITE_CLEANER_CODE=$VITE_CLEANER_CODE,\
+VITE_VERIFY_THRESHOLD=2
+```
 
-#### B — Server (`server.ts`)
-- [ ] Enum validation for `category`/`severity` on `/api/triage` + `/api/agent/resolve`; trim + 500-char cap on summary/userNote
-- [ ] Exponential rate limiter: 8 AI calls/IP/hour; 30 s base cooldown doubling each call (in-memory Map)
-- [ ] `POST /api/verify-completion`: validate photo prefix `data:image/`; Gemini Vision prompt checks if issue is resolved; simulated fallback; returns `{ isResolved, confidence, summary, isSimulated }`
+After first deploy:
+1. Open the live URL → log in → copy your UID from the header (the tiny copy button)
+2. Add `VITE_ADMIN_UID=<your-uid>` to `.env`
+3. Redeploy with `VITE_ADMIN_UID` as an additional `--build-env-vars` entry
+4. Update `docs/status.md` with the live URL
 
-#### C — Firestore + rules
-- [ ] `firestore.rules`: write to `users/{uid}` only by own UID; `issues/{id}` claim guard (must be Acknowledged); verify guard (must be Pending Verification, voter not already voted)
-- [ ] `firebase.json`: add to repo
+- [ ] First deploy (no admin UID yet)
+- [ ] Copy UID → set `VITE_ADMIN_UID` → redeploy
+- [ ] Confirm live URL is accessible and app boots
 
-#### D — AppContext (`src/context/AppContext.tsx`)
-- [ ] Migrate user profile localStorage → Firestore `users/{uid}` (merge on first auth)
-- [ ] Expose `userRole`, `leaderboard: UserProfile[]` in context
-- [ ] `claimIssue(issueId)`: set status=Claimed, claimedByUid, claimedAt
-- [ ] `submitCompletionPhoto(issueId, photoBase64)`: call `/api/verify-completion`; on AI approval → set status=Pending Verification + store url + summary; on AI rejection → return rejection reason to UI
-- [ ] `verifyResolution(issueId, vote)`: arrayUnion vote; if clean votes ≥ threshold → Resolved + award XP to reporter + cleaner; if dirty votes ≥ threshold → Acknowledged + clear claim
-- [ ] `awardXP(uid, amount)`: Firestore increment; `checkAchievements(profile)`: pure function, returns newly unlocked achievements
-- [ ] Leaderboard: onSnapshot `users` query by xp desc limit 20
+---
 
-#### E — Achievements (`src/lib/achievements.ts`)
-Ten achievements with XP rewards:
-| ID | Trigger | XP |
-|---|---|---|
-| `first_report` | 1 report | +50 |
-| `newcomer` | 1 report gets resolved | +75 |
-| `neighborhood_watch` | 5 reports | +100 |
-| `community_guardian` | 10 reports | +200 |
-| `verified_voice` | 3 verifications done | +80 |
-| `quality_reporter` | 3 reports resolved | +150 |
-| `first_fix` | cleaner: 1 cleaned | +100 |
-| `quick_responder` | cleaner: cleaned within 24h | +75 |
-| `cleanup_crew` | cleaner: 5 cleaned | +200 |
-| `city_cleaner` | cleaner: 10 cleaned | +400 |
+## Step 7 — Design polish (impeccable gate — mandatory)
 
-#### F — New components
-- [ ] `src/components/AchievementModal.tsx`: unlock notification (badge + name + XP gained + confetti)
-- [ ] `src/components/Leaderboard.tsx`: two tabs — XP leaders + Report count leaders; real-time
-- [ ] `src/components/VerificationPrompt.tsx`: geo-proximity banner on Map tab; shows before/after photos; Clean / Still Dirty buttons
-- [ ] `src/components/RoleSelector.tsx`: enter cleaner code in profile to upgrade role
-- [ ] `src/components/CleanerPanel.tsx`: inline on IssueDetailPage — "Claim" button + upload completion photo
+CLAUDE.md mandates the `impeccable` skill for all UI work. Run it before calling design done.
 
-#### G — IssueDetailPage + App shell
-- [ ] `IssueDetailPage.tsx`: cleaner panel (claim/upload) vs citizen verify panel vs admin override, gated by role + status
-- [ ] `App.tsx`: add Leaderboard tab; admin badge + UID display; AchievementModal overlay
-- [ ] `.env.example`: add `VITE_ADMIN_UID`, `VITE_CLEANER_CODE`, `VITE_VERIFY_THRESHOLD`
+- [ ] Run `/impeccable` audit pass on the current UI
+- [ ] Fix any critical UX issues surfaced (mobile-first, the judges will use phones)
+- [ ] Check CommunityFeed card hierarchy — issue type / severity / status must be scannable at a glance
+- [ ] Check IssueDetailPage on mobile — AI Action Plan card + cleaner/citizen panels must not overflow
+- [ ] Verify AchievementModal looks good on small screens
 
-#### H — Build + lint pass
-- [ ] `npm run lint` clean
-- [ ] `npm run build` clean
-- [ ] `docs/status.md` + `docs/changelog.md` updated
+---
 
-### Remaining build work
-- [ ] **Step 5 — Impact dashboard + predictive hotspots.** Counts by category/status/area, avg
-  resolution time; a predictive agent over all issues surfacing recurring hotspots.
-- [ ] **Step 6 — Real gamification.** Move points from `localStorage` → Firestore `users`
-  collection; cross-user leaderboard.
-- [ ] **Polish:** impeccable design pass (mandatory before "done"), README, restrict Firebase
-  rules + API key.
+## Step 8 — Submission deliverables
 
-### Deliverables (Step 7 — see docs/submission.md)
-- [ ] Live Cloud Run link (public, stable through judging).
-- [x] Public GitHub repo.
-- [ ] Project-description Google Doc (link-shared).
-- [ ] Final Submit on BlockseBlock (irreversible).
+- [ ] **README.md** — one-pager: what it is, how to run locally, how to deploy, env vars table
+- [ ] **Project-description Google Doc** — share link publicly. Include: problem, solution, agent
+  flow diagram (text is fine), tech stack, evaluation matrix self-score, live link, repo link.
+- [ ] Verify all three links are live: Cloud Run URL, GitHub repo, Google Doc
+- [ ] **Final Submit** on BlockseBlock → Track 2 → paste the three links → submit.
+  **Irreversible. Do not submit until all three are verified.**
+
+---
 
 ## Risks
-- Irreversible Final Submit — verify all three links live first.
-- 3-day window — keep a working end-to-end slice before adding breadth.
-- Starter-tier deploy was abandoned (managed black box failed); we deploy our own container.
-- Mentor session (24 Jun) passed; check BlockseBlock for a recording with judge hints.
+- Hard deadline 2026-06-29 14:00 — no extensions.
+- Blaze billing is the single deployment gate; everything else is agent-executable.
+- Irreversible Final Submit — verify all links first.
+- `VITE_ADMIN_UID` must be set after first login (can't know it before deploy).
+- Without `GEMINI_API_KEY`, AI routes run in simulated mode — app still works but judges see "Demo mode" labels.

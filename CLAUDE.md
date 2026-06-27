@@ -1,27 +1,26 @@
 # CLAUDE.md — Community Hero (civichero)
 
-Agent context for this repo. Read `docs/status.md` first for live state.
+Agent context for this repo. **Read `docs/status.md` first — it has the live handoff state.**
+Then read `docs/plan.md` for the ordered task list.
 
 ## What this is
 Track 2 ("Community Hero — Hyperlocal Problem Solver") submission for the BlockseBlock
 hackathon. **Hard deadline: 2026-06-29 14:00.** A mobile-first civic issue reporting platform:
-citizens photograph a local problem, Gemini Vision triages it, and an agent plans its resolution.
+citizens photograph a local problem, Gemini Vision triages it, an agent plans its resolution,
+and a 3-role system (citizen / cleaner / admin) closes the loop with community verification.
 
-Mandatory deliverables: live link deployed on **Google Cloud (Cloud Run)**, this public GitHub
-repo, and a project-description Google Doc. Judged on: Problem-Solving 20, **Agentic Depth 20**,
-**Innovation 20**, Google Tech 15, Design 10, Tech 10, Completeness 5. The 40% on Agentic
-Depth + Innovation is the north star.
+Mandatory deliverables: live link on **Google Cloud (Cloud Run)**, public GitHub repo, project
+Google Doc. Judged on: Problem-Solving 20, **Agentic Depth 20**, **Innovation 20**, Google Tech 15,
+Design 10, Tech 10, Completeness 5. The 40% on Agentic Depth + Innovation is the north star.
 
 ## Stack
 React 19 + Vite 6 + TypeScript + Tailwind 4 (client, `src/`) and an Express server
 (`server.ts`) in one app. Firebase (Auth + Firestore + Storage), Gemini via `@google/genai`,
-Google Maps via `@vis.gl/react-google-maps`. Origin: scaffolded in Google AI Studio Build Mode,
-now developed locally. Deploys to Cloud Run.
+Google Maps via `@vis.gl/react-google-maps`. Deploys to Cloud Run.
 
 ## How it runs
 `server.ts` is the entrypoint: in dev it serves Vite middleware; in prod it serves the built
-`dist/` and the API routes. Build bundles the client (`vite build`) and the server
-(`esbuild server.ts --format=cjs --outfile=dist/server.cjs`).
+`dist/` and the API routes.
 
 | Command | Purpose |
 |---|---|
@@ -33,48 +32,64 @@ now developed locally. Deploys to Cloud Run.
 Reproduce the prod container locally: `NODE_ENV=production PORT=8137 node dist/server.cjs`.
 
 ## Environment
-Copy `.env.example` → `.env` (gitignored). `VITE_FIREBASE_*` are **public by design**
-(safe in the client bundle). `GEMINI_API_KEY` is a **real secret** — server-side only; without
-it the AI endpoints return deterministic **simulated** output (the app still works for demos).
-`VITE_GOOGLE_MAPS_API_KEY` is baked in at build time (pass as Docker `--build-arg` for deploy).
+Copy `.env.example` → `.env` (gitignored). `.env` is already populated locally.
+
+| Var | Type | Notes |
+|---|---|---|
+| `VITE_FIREBASE_*` | public | Safe in client bundle. Already set in `.env`. |
+| `GEMINI_API_KEY` | **secret** | Server-side only. Without it: simulated AI (app still works). |
+| `VITE_GOOGLE_MAPS_API_KEY` | build-time | Baked in at `vite build`. Map shows disabled without it. |
+| `VITE_ADMIN_UID` | build-time | Firebase UID of the admin user. Set after first login. |
+| `VITE_CLEANER_CODE` | build-time | Code cleaners enter to unlock cleaner role. Default: `CLEAN2026`. |
+| `VITE_VERIFY_THRESHOLD` | build-time | Citizen votes needed to resolve/reject. Default: `2`. |
 
 ## Key files
-- `server.ts` — Express + API: `/api/triage` (Gemini Vision classify), `/api/agent/resolve`
-  (Agentic Resolution Layer), `/api/maps-config`. Both AI routes degrade gracefully without a key.
-- `src/context/AppContext.tsx` — global state, Firestore sync, `createIssueReport`,
-  `upvoteIssue`, `updateIssueStatus`, `resolveIssuePlan` (gathers nearby issues, calls the agent).
-- `src/components/IssueDetailPage.tsx` — issue detail + the **AI Action Plan** card.
+- `server.ts` — `/api/triage` (Gemini Vision), `/api/agent/resolve` (Agentic Resolution Layer),
+  `/api/verify-completion` (completion photo verification), `/api/maps-config`. Rate limiting.
+- `src/context/AppContext.tsx` — all global state + Firestore sync. Key functions:
+  `createIssueReport`, `upvoteIssue`, `updateIssueStatus`, `resolveIssuePlan`, `claimIssue`,
+  `submitCompletionPhoto`, `verifyResolution`, `upgradeToCleanerRole`.
+- `src/lib/achievements.ts` — 10 achievements, XP defs, `checkNewAchievements()`.
+- `src/types.ts` — `CivicIssue`, `AgentPlan`, `UserProfile`, `UserRole`, `AchievementId`, etc.
+- `src/components/IssueDetailPage.tsx` — 5-step progress stepper + AI Action Plan + role panels.
+- `src/components/{AchievementModal,Leaderboard,VerificationPrompt,RoleSelector,CleanerPanel}.tsx`
 - `src/components/{ReportIssueForm,CommunityFeed,CivicMap}.tsx` — intake, feed, map.
 - `src/lib/firebase.ts` — Firebase init from `import.meta.env.VITE_FIREBASE_*`.
-- `src/types.ts` — `CivicIssue`, `AgentPlan`, etc.
 - `Dockerfile` — Cloud Run build (Vite client + CJS server).
+- `firestore.rules` + `firebase.json` — Firestore security rules (in repo).
+- `scripts/verify-agent-flow.mjs` — smoke test: anon auth → Firestore write → agent endpoint.
 
 ## Gotchas (do not regress)
 - `server.ts` MUST read `process.env.PORT` (Cloud Run injects it). Never hardcode the port.
 - Do NOT use `import.meta.url`/`fileURLToPath` in `server.ts` — it bundles to CommonJS where
   `import.meta.url` is undefined and crashes startup. Use `process.cwd()`.
 - Firebase web API keys are public; never treat them as secrets. The real secret is `GEMINI_API_KEY`.
+- `UID` is a read-only special var in zsh — use a different name in scripts.
+- Rate limiting is in-memory on the server — it resets on restart. That's intentional.
+- `VITE_ADMIN_UID` can't be known before the first deploy; set it after the first login and redeploy.
 
-## Firebase (DONE — see docs/status.md)
-Uses the **owned** project `civichero-84074` (the AI Studio `neon-mountain-nwrl4` was a managed
-sandbox, abandoned). Anonymous Auth enabled, Firestore rules deployed, agent flow verified green.
-`.env` is set locally. For live AI, add a real `GEMINI_API_KEY` to `.env` (else simulated mode).
+## 3-Role system (Step 5 — SHIPPED)
+- **citizen** — default. Can report, upvote, vote on verification.
+- **cleaner** — enters `VITE_CLEANER_CODE` in the Leaderboard tab → role saved to Firestore.
+  Can claim Acknowledged issues, upload completion photos, earn cleanup XP.
+- **admin** — Firebase UID matches `VITE_ADMIN_UID` build-time env. Can override status on any issue.
 
-## Remaining blockers (need billing / the human)
-1. **Storage + Cloud Run deploy** need the project on the **Blaze (paid) plan**. Then
-   `gcloud run deploy --source .` with the `VITE_*` build args + `GEMINI_API_KEY` runtime env.
-   Dockerfile is ready. (Without Storage, image uploads fall back to inline base64 in Firestore.)
-2. **Maps**: add `VITE_GOOGLE_MAPS_API_KEY` to `.env` for the live map.
+Resolution flow: Reported → Acknowledged (3+ upvotes OR admin) → Claimed (cleaner) →
+Pending Verification (Gemini Vision checks cleaner's photo) →
+Resolved (≥2 citizen clean votes) OR Acknowledged (≥2 dirty votes, claim cleared).
 
-## Next planned work
-Step 5 — impact dashboard + predictive hotspots. Step 6 — move points to Firestore + real
-leaderboard. Full plan in `docs/plan.md`; decisions in `docs/decisions.md`; lessons in
-`docs/lessons.md`; **submission rules + checklist in `docs/submission.md`**.
+## Firebase (DONE)
+Owned project `civichero-84074`. Anonymous Auth enabled. Firestore rules deployed.
+`scripts/verify-agent-flow.mjs` → PASS.
+**Needs Blaze billing to activate Storage + Cloud Run deploy.**
 
-## Verification
-`node scripts/verify-agent-flow.mjs` — checks Anonymous Auth → authenticated Firestore write →
-local agent endpoint, printing PASS/FAIL with the exact fix for whatever is blocked.
+## Current blocker
+**Blaze billing not yet enabled on `civichero-84074`.** The human is enabling it.
+Once `gcloud billing projects describe civichero-84074` returns `billingEnabled: true`,
+the agent can deploy autonomously. See `docs/plan.md` Step 6 for the exact command.
 
 ## Workflow
-Plan before executing, keep `docs/` current (status, changelog, decisions, lessons), run
-`npm run lint` + `npm run build` before declaring work done, format with Prettier.
+Read `docs/status.md` → read `docs/plan.md` → execute next unchecked step.
+Keep `docs/` current (status, changelog, decisions, lessons).
+Run `npm run lint` + `npm run build` before declaring any code work done.
+Use the `impeccable` skill for ALL UI/design work — mandatory per global CLAUDE.md.
