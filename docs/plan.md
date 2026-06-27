@@ -1,6 +1,6 @@
 # Plan — Community Hero (civichero)
 
-BlockseBlock hackathon, Track 2. **Deadline: 2026-06-29 14:00.** Live state in `docs/status.md`;
+BlockseBlock hackathon, Track 2. **Deadline: 2026-06-30 23:59.** Live state in `docs/status.md`;
 decisions in `docs/decisions.md`; submission steps in `docs/submission.md`.
 
 ## Goal
@@ -112,7 +112,7 @@ CLAUDE.md mandates the `impeccable` skill for all UI work. Run it before calling
 ---
 
 ## Risks
-- Hard deadline 2026-06-29 14:00 — no extensions.
+- Hard deadline 2026-06-30 23:59 — no extensions.
 - Blaze billing is the single deployment gate; everything else is agent-executable.
 - Irreversible Final Submit — verify all links first.
 - `VITE_ADMIN_UID` must be set after first login (can't know it before deploy).

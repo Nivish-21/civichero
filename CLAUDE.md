@@ -5,7 +5,7 @@ Then read `docs/plan.md` for the ordered task list.
 
 ## What this is
 Track 2 ("Community Hero — Hyperlocal Problem Solver") submission for the BlockseBlock
-hackathon. **Hard deadline: 2026-06-29 14:00.** A mobile-first civic issue reporting platform:
+hackathon. **Hard deadline: 2026-06-30 23:59.** A mobile-first civic issue reporting platform:
 citizens photograph a local problem, Gemini Vision triages it, an agent plans its resolution,
 and a 3-role system (citizen / cleaner / admin) closes the loop with community verification.
 

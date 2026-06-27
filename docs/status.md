@@ -1,7 +1,7 @@
 # Status — Community Hero (civichero)
 
 **Last updated:** 2026-06-27
-**Deadline:** 2026-06-29 14:00 (hard).
+**Deadline:** 2026-06-30 23:59 (hard).
 **Repo:** https://github.com/Nivish-21/civichero (public)
 **Local:** /Users/nivish/development/civichero
 **Branch:** main (clean, pushed)
