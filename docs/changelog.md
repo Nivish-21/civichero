@@ -48,6 +48,51 @@
   enabled without project credentials; documented the 1-step fix.
 - CLAUDE.md + status.md reference the verify script + submission doc.
 
+## 2026-06-27 — Step 5: 3-Role System + Gamification
+
+**src/types.ts** — Added `UserRole`, extended `IssueStatus` with "Claimed"/"Pending Verification",
+  `UserProfile` (xp, role, achievements, reportCount, cleanedCount, verifyCount), `AchievementId`,
+  `verificationVotes`/`verificationThreshold`/`claimedByUid`/`completionPhotoUrl` on `CivicIssue`.
+
+**src/lib/achievements.ts** (new) — 10 achievement definitions with XP rewards; `checkNewAchievements()`;
+  `hasAchievement()`; `totalXpForAchievements()`.
+
+**src/context/AppContext.tsx** — `claimIssue` (Acknowledged→Claimed, XP award), `submitCompletionPhoto`
+  (base64→server→Gemini verify→Pending Verification, XP), `verifyResolution` (citizen vote→Resolved or
+  back to Acknowledged), `upgradeToCleanerRole` (code check→Firestore role update), leaderboard
+  onSnapshot (top-20 by XP), `pendingAchievement` queue, in-memory rate limiting (8/hr + exponential
+  cooldown). Firestore `users/{uid}` stores UserProfile; cross-user XP via `increment()`.
+
+**src/components/AchievementModal.tsx** (new) — Spring-animated overlay (scale + translate) on
+  `pendingAchievement` state; dismisses on backdrop or button click.
+
+**src/components/Leaderboard.tsx** (new) — Two-tab (XP Leaders / Top Reporters) leaderboard; top-3
+  medals; role badges; sorted client-side from context state.
+
+**src/components/VerificationPrompt.tsx** (new) — Citizens see before/after photos + AI summary + vote
+  tally + "It's Clean / Still Dirty" buttons on Pending Verification issues. De-duplication via
+  `verificationVotes` arrays + local `voted` state.
+
+**src/components/RoleSelector.tsx** (new) — Citizens enter cleaner code to upgrade role; amber UI;
+  success/error/loading states.
+
+**src/components/CleanerPanel.tsx** (new) — 4-state panel for cleaners: claim unclaimed issues, upload
+  proof photo (FileReader→base64→submitCompletionPhoto), track pending verification, see "claimed by
+  other" message. FileRef reset so same file can be re-selected.
+
+**src/components/IssueDetailPage.tsx** — 5-step progress stepper (Reported/Acknowledged/Claimed/Pending
+  Verification/Resolved) with `statusIndexMap` for legacy "In Progress" status. Role-gated panels:
+  admin sees "Admin Override" button, cleaners see CleanerPanel, citizens see VerificationPrompt.
+
+**src/App.tsx** — Rewritten: 4-tab nav (Issues Feed / Map / Report / Leaderboard), XP display in
+  header (not points), role badge (Admin/Cleaner), UID copy helper for admin setup, `AchievementModal`
+  global overlay, `getCitizenLevel()` uses XP thresholds, `RoleSelector` in Leaderboard tab.
+
+**.env.example** — Added `VITE_ADMIN_UID`, `VITE_CLEANER_CODE` (default: CLEAN2026),
+  `VITE_VERIFY_THRESHOLD` (default: 2).
+
+Build: `npm run lint` (tsc) + `npm run build` — both pass clean.
+
 ## 2026-06-26 (cont.) — new Firebase project + agent flow VERIFIED
 - AI Studio Starter project `neon-mountain-nwrl4` is a managed sandbox (no owner rights) — abandoned.
 - Created owned project `civichero-84074`; `.env` repointed (config now in env vars, so it was a

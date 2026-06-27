@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Issues: public read; authenticated users can create their own;
+    // updates allowed for any authenticated user (claim, verify, status changes
+    // are validated at the application layer for hackathon scope).
+    match /issues/{issueId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null;
+      allow delete: if false;
+    }
+
+    // User profiles: public read for leaderboard.
+    // Own UID can always write. Any authenticated user can UPDATE (not create/delete)
+    // to support cross-user XP awards (reporter/cleaner bonuses on resolution).
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null;
+      allow delete: if false;
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # Status — Community Hero (civichero)
 
-**Last updated:** 2026-06-26
+**Last updated:** 2026-06-27
 **Deadline:** 2026-06-29 14:00 (hard).
 **Repo:** https://github.com/Nivish-21/civichero (public)
 **Local:** /Users/nivish/development/civichero
@@ -23,23 +23,38 @@
 3. Re-verify any time: start app (`NODE_ENV=production PORT=8137 node dist/server.cjs`) then
    `node scripts/verify-agent-flow.mjs`.
 
+## Step 5 — COMPLETE (2026-06-27)
+3-Role system + gamification shipped and build-verified:
+
+**Roles:** citizen (default) | cleaner (`VITE_CLEANER_CODE`) | admin (`VITE_ADMIN_UID`)
+
+**Resolution flow:** Reported → Acknowledged (3+ upvotes OR admin) → Claimed (cleaner) →
+Pending Verification (cleaner uploads proof + Gemini verifies) → Resolved (2 clean votes) OR
+back to Acknowledged (2 dirty votes).
+
+**Files changed:**
+- `src/types.ts` — `UserRole`, `IssueStatus` (Claimed / Pending Verification), `UserProfile` (xp, achievements, role)
+- `src/lib/achievements.ts` — 10 achievements, XP reward defs, `checkNewAchievements()`
+- `src/context/AppContext.tsx` — `claimIssue`, `submitCompletionPhoto`, `verifyResolution`, `upgradeToCleanerRole`, leaderboard subscription, `pendingAchievement`, rate limiting
+- `src/components/AchievementModal.tsx` — animated unlock overlay
+- `src/components/Leaderboard.tsx` — XP + report-count dual-tab leaderboard
+- `src/components/VerificationPrompt.tsx` — before/after photo + community vote UI
+- `src/components/RoleSelector.tsx` — citizen → cleaner upgrade via code
+- `src/components/CleanerPanel.tsx` — claim / upload proof / pending states
+- `src/components/IssueDetailPage.tsx` — 5-step progress stepper, role-gated panels
+- `src/App.tsx` — 4-tab nav (Leaderboard tab), XP display, role badge, `AchievementModal` overlay
+- `.env.example` — `VITE_ADMIN_UID`, `VITE_CLEANER_CODE`, `VITE_VERIFY_THRESHOLD`
+
 ## Remaining work (priority order)
-1. **Live AI (optional but recommended):** put a real `GEMINI_API_KEY` in `.env` to replace the
-   simulated triage/agent output. Without it the app still works (simulated).
-2. **Browser click-through** (not done this session): submit a report → open it → "Generate AI
-   Action Plan" → confirm the card renders. A demo issue was being seeded via Firestore REST;
-   finish that or just use the report form in the running app.
-3. **Maps:** add `VITE_GOOGLE_MAPS_API_KEY` to `.env` (build-time) for the live map.
-4. **Storage:** needs the **Blaze (paid) plan** — currently the app falls back to inline base64
-   in Firestore (works for small images; watch the 1 MiB doc limit). Upgrade to Blaze for real
-   Storage (also needed for Cloud Run billing).
-5. **Deploy to Cloud Run:** project needs billing (Blaze). Then
-   `gcloud run deploy civichero --source . --region asia-south1 --allow-unauthenticated`
-   passing the `VITE_FIREBASE_*` (+ `VITE_GOOGLE_MAPS_API_KEY`) build args and `GEMINI_API_KEY`
-   as a runtime env/secret. Dockerfile is ready.
-6. **Step 5** — impact dashboard + predictive hotspots. **Step 6** — points to Firestore +
-   leaderboard. Then design polish (impeccable), README, project-description Google Doc.
-7. **Submit** — see `docs/submission.md` (checklist + BlockseBlock steps; irreversible Final Submit).
+1. **Live AI:** put a real `GEMINI_API_KEY` in `.env`. Without it: simulated triage + simulated completion verification.
+2. **Maps:** add `VITE_GOOGLE_MAPS_API_KEY` to `.env` (build-time).
+3. **Storage:** needs Blaze plan — app falls back to inline base64 in Firestore (watch 1 MiB limit).
+4. **Deploy to Cloud Run:** `gcloud run deploy civichero --source . --region asia-south1 --allow-unauthenticated`
+   Pass `VITE_FIREBASE_*` + `VITE_CLEANER_CODE` + `VITE_ADMIN_UID` + `VITE_VERIFY_THRESHOLD` as build args;
+   `GEMINI_API_KEY` as runtime secret.
+5. **Admin setup:** after first deploy, copy your UID from the app header → set `VITE_ADMIN_UID` → rebuild.
+6. **Design polish + README + Google Doc** → then Final Submit.
+7. **Submit** — see `docs/submission.md`.
 
 ## Notes / gotchas (operational)
 - Don't leave a backgrounded server (`node dist/server.cjs &`) running at the end of a shell

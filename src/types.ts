@@ -14,7 +14,28 @@ export type IssueStatus =
   | "Reported"
   | "Acknowledged"
   | "In Progress"
+  | "Claimed"
+  | "Pending Verification"
   | "Resolved";
+
+export type UserRole = "citizen" | "cleaner" | "admin";
+
+export type AchievementId =
+  | "first_report"
+  | "newcomer"
+  | "neighborhood_watch"
+  | "community_guardian"
+  | "verified_voice"
+  | "quality_reporter"
+  | "first_fix"
+  | "quick_responder"
+  | "cleanup_crew"
+  | "city_cleaner";
+
+export interface Achievement {
+  id: AchievementId;
+  unlockedAt: number;
+}
 
 export interface StatusTimelineEvent {
   status: IssueStatus;
@@ -28,8 +49,8 @@ export interface CivicIssue {
   severity: IssueSeverity;
   summary: string;
   userNote: string;
-  photoUrl: string; // Firebase Storage URL or base64 fallback
-  videoUrl?: string; // Firebase Storage URL or base64 fallback
+  photoUrl: string;
+  videoUrl?: string;
   latitude: number;
   longitude: number;
   address?: string;
@@ -39,16 +60,23 @@ export interface CivicIssue {
   userId: string;
   timestamp: number;
   history: StatusTimelineEvent[];
-  agentPlan?: AgentPlan; // populated on-demand by the Agentic Resolution Layer
+  agentPlan?: AgentPlan;
+  // 3-role system fields
+  claimedByUid?: string;
+  claimedAt?: number;
+  completionPhotoUrl?: string;
+  aiCompletionVerified?: boolean;
+  aiCompletionSummary?: string;
+  verificationVotes: { clean: string[]; dirty: string[] };
+  verificationThreshold: number;
 }
 
-// Output of the Agentic Resolution Layer (/api/agent/resolve).
 export interface AgentPlan {
   authority: string;
   authorityReason: string;
   duplicateOfId: string | null;
   duplicateReason: string;
-  priorityScore: number; // 0-100
+  priorityScore: number;
   slaDays: number;
   draftReport: string;
   recommendedActions: string[];
@@ -60,5 +88,12 @@ export interface UserProfile {
   uid: string;
   displayName: string;
   avatarUrl: string;
-  points: number;
+  role: UserRole;
+  xp: number;
+  achievements: Achievement[];
+  reportCount: number;
+  resolvedReportCount: number;
+  cleanedCount: number;
+  verifyCount: number;
+  points: number; // legacy display alias for xp
 }

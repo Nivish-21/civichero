@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useApp } from "../context/AppContext";
 import { CivicIssue, IssueStatus } from "../types";
 import { CivicMap } from "./CivicMap";
+import { CleanerPanel } from "./CleanerPanel";
+import { VerificationPrompt } from "./VerificationPrompt";
 import {
   ArrowLeft,
   MapPin,
@@ -120,24 +122,35 @@ export const IssueDetailPage: React.FC<IssueDetailPageProps> = ({
     {
       status: "Acknowledged",
       label: "Acknowledged",
-      description: "Under review by municipal staff.",
+      description: "3+ upvotes or admin review.",
     },
     {
-      status: "In Progress",
-      label: "In Progress",
-      description: "Work crew is dispatched to repair.",
+      status: "Claimed",
+      label: "Claimed",
+      description: "A cleaner has taken ownership.",
+    },
+    {
+      status: "Pending Verification",
+      label: "Pending Verification",
+      description: "Proof submitted — awaiting community votes.",
     },
     {
       status: "Resolved",
       label: "Resolved",
-      description: "Fix completed. Hazard removed!",
+      description: "Community verified — hazard removed!",
     },
   ];
 
-  // Find the index of current issue status
-  const currentStatusIndex = statusLevels.findIndex(
-    (s) => s.status === issue.status,
-  );
+  // Map every status to a stepper index (In Progress is a legacy admin alias for Claimed level)
+  const statusIndexMap: Record<IssueStatus, number> = {
+    Reported: 0,
+    Acknowledged: 1,
+    "In Progress": 2,
+    Claimed: 2,
+    "Pending Verification": 3,
+    Resolved: 4,
+  };
+  const currentStatusIndex = statusIndexMap[issue.status] ?? 0;
 
   // Handle simulated status change
   const handleUpdateStatus = async (e: React.FormEvent) => {
@@ -288,20 +301,30 @@ export const IssueDetailPage: React.FC<IssueDetailPageProps> = ({
                   </span>
                 </button>
 
-                {/* Simulated authority console trigger button */}
-                <button
-                  type="button"
-                  onClick={() => setShowAuthorityConsole(!showAuthorityConsole)}
-                  className={`flex items-center gap-1 px-3.5 py-2 text-xs font-semibold rounded-xl border transition-all ${
-                    showAuthorityConsole
-                      ? "bg-slate-900 border-slate-900 text-white"
-                      : "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700"
-                  }`}
-                >
-                  <Shield className="w-4 h-4 shrink-0 text-emerald-500" />
-                  <span>Authority Actions</span>
-                </button>
+                {/* Admin-only authority console trigger */}
+                {user?.role === "admin" && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAuthorityConsole(!showAuthorityConsole)}
+                    className={`flex items-center gap-1 px-3.5 py-2 text-xs font-semibold rounded-xl border transition-all ${
+                      showAuthorityConsole
+                        ? "bg-slate-900 border-slate-900 text-white"
+                        : "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700"
+                    }`}
+                  >
+                    <Shield className="w-4 h-4 shrink-0 text-emerald-500" />
+                    <span>Admin Override</span>
+                  </button>
+                )}
               </div>
+
+              {/* Cleaner action panel */}
+              {user?.role === "cleaner" && <CleanerPanel issue={issue} />}
+
+              {/* Citizen verification prompt for Pending Verification issues */}
+              {user?.role === "citizen" && (
+                <VerificationPrompt issue={issue} />
+              )}
             </div>
           </div>
 
