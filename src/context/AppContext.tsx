@@ -399,7 +399,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       summary: data.summary,
       userNote: data.userNote,
       photoUrl,
-      videoUrl: videoUrl || undefined,
+      ...(videoUrl ? { videoUrl } : {}),
       latitude: data.latitude,
       longitude: data.longitude,
       address: data.address || "Hyperlocal Area",

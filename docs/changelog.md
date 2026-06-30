@@ -101,3 +101,32 @@ Build: `npm run lint` (tsc) + `npm run build` — both pass clean.
 - `scripts/verify-agent-flow.mjs` runs GREEN: anon auth → Firestore write → agent endpoint.
 - Storage deferred (needs Blaze); app falls back to inline base64. Deploy deferred (needs billing).
 - Updated CLAUDE.md + docs/status.md for handoff. gcloud authed as nivishnick2004.
+
+## 2026-06-30 — Step 6: Cloud Run deploy + bug fixes
+
+### Deploy (civichero-00009-pqw / 00010-nh5)
+- Blaze billing enabled on `civichero-84074`. Cloud Run deploy succeeded.
+- Live: https://civichero-1051965377286.asia-south1.run.app
+- Root cause of missing Maps/Gemini: `cloudbuild.yaml` `build-args` are ignored by Cloud Run — fixed
+  by baking `VITE_*` vars as Dockerfile ARG defaults.
+- Dockerfile: added `VITE_GOOGLE_MAPS_API_KEY`, `VITE_FIREBASE_*`, `VITE_CLEANER_CODE`,
+  `VITE_VERIFY_THRESHOLD`, `VITE_ADMIN_UID` as ARG defaults so Cloud Run build picks them up.
+
+### Bug fix: "Publishing..." button stuck forever (revisions 00009/00010)
+- **Root cause A:** `uploadString` to Firebase Storage had no timeout. Storage `storage.rules` file
+  never existed (firebase.json referenced it), so all uploads silently blocked — promise never settled
+  → `setSubmitting(false)` never ran → button stuck indefinitely.
+- **Fix A:** Created `storage.rules` (`allow write: if request.auth != null`); user deployed via
+  `firebase deploy --only storage --project civichero-84074`. Storage uploads now return HTTP 200.
+- **Root cause B:** No timeout on `uploadString` — if Storage unreachable, form freezes.
+- **Fix B (AppContext.tsx):** Added `withTimeout<T,>()` wrapper (8s) using `Promise.race`; on timeout,
+  falls back to `compressToThumbnail()` (Canvas API, 480px JPEG @ 50%) to keep Firestore doc under 1 MiB.
+  Video fallback changed from raw base64 to `""` (avoids bloating document).
+- `<T>` generic in `.tsx` is parsed as JSX → changed to `<T,>` (trailing comma) to fix 158 TS errors.
+
+### Bug fix: "Failed to save issue report" — Firestore rejecting undefined field
+- **Root cause:** `videoUrl: videoUrl || undefined` evaluated to literal `undefined` when no video
+  was attached (since `videoUrl = ""`). Firestore's `setDoc` throws on `undefined` values.
+  This was unreachable before (Storage hung first); now that Storage works the `setDoc` is reached.
+- **Fix (AppContext.tsx line 402):** Changed to `...(videoUrl ? { videoUrl } : {})` — field omitted
+  entirely when empty, which is correct for a Firestore optional field.

@@ -51,16 +51,24 @@ Resolved (≥2 clean votes) OR back to Acknowledged (≥2 dirty votes)
 
 ## Step 6 — DEPLOYED ✅ (2026-06-30)
 
-- **latest revision:** civichero-00009-pqw (bug fix: "Publishing..." stuck)
+- **latest revision:** civichero-00010-nh5 (next build will be 00011 with Firestore fix)
 - **Maps key:** baked into bundle (confirmed via curl grep)
 - **Gemini AI:** live — `/api/agent/resolve` returns real authority routing + SLA
 - **Root cause note (maps):** Cloud Run ignores `cloudbuild.yaml` build-args; fix was baking public VITE_ vars directly as Dockerfile ARG defaults
-- **Bug fix (submit hang):** `uploadString` to Firebase Storage had no timeout — hung forever when Storage bucket unreachable (rules not deployed). Fix: 20s timeout + compressed thumbnail fallback so Firestore document stays under 1 MiB
+
+### Bug fixes applied this session
+| Bug | Root cause | Fix |
+|-----|-----------|-----|
+| "Publishing..." stuck forever | `uploadString` no timeout; `storage.rules` missing so uploads blocked | `withTimeout(8s)` + `compressToThumbnail` fallback; deployed `storage.rules` |
+| "Failed to save issue report" | `videoUrl: videoUrl \|\| undefined` → Firestore rejects literal `undefined` | `...(videoUrl ? { videoUrl } : {})` — omit field when empty |
+
+**Status:** fix committed locally, needs `npm run lint` + build + redeploy.
 
 ## Remaining (deadline: 23:59 today)
 
-1. **Google Doc** — create + share publicly (user must do this — requires Google account)
-2. **Final Submit** — BlockseBlock → Track 2 → paste three links → submit. IRREVERSIBLE.
+1. **[NEXT]** `npm run lint` + `npm run build` → redeploy to Cloud Run → end-to-end test
+2. **Google Doc** — create + share publicly (user must do this — requires Google account)
+3. **Final Submit** — BlockseBlock → Track 2 → paste three links → submit. IRREVERSIBLE.
 
 ---
 
