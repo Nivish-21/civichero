@@ -1,8 +1,9 @@
 # Status — Community Hero (civichero)
 
-**Last updated:** 2026-06-27
+**Last updated:** 2026-06-30
 **Deadline:** 2026-06-30 23:59 (hard).
-**Repo:** https://github.com/Nivish-21/civichero (public)
+**Live URL:** https://civichero-1051965377286.asia-south1.run.app ✅
+**Repo:** https://github.com/Nivish-21/civichero (public) ✅
 **Local:** /Users/nivish/development/civichero
 **Branch:** main (clean, pushed)
 
@@ -48,32 +49,17 @@ Resolved (≥2 clean votes) OR back to Acknowledged (≥2 dirty votes)
 
 ---
 
-## BLOCKED ON HUMAN — DO THIS FIRST
+## Step 6 — DEPLOYED ✅ (2026-06-30)
 
-**Enable Blaze billing** on Firebase project `civichero-84074`. This is the single gate.
+- **revision:** civichero-00008-q7r
+- **Maps key:** baked into bundle `index-Cvo-bMH5.js` (confirmed via curl grep)
+- **Gemini AI:** live — `/api/agent/resolve` returns real authority routing + SLA
+- **Root cause note:** Cloud Run ignores `cloudbuild.yaml` build-args; fix was baking public VITE_ vars directly as Dockerfile ARG defaults
 
-> Firebase console → project `civichero-84074` → Spark plan badge (bottom-left) → Upgrade to Blaze → add payment method → set a $5 budget alert.
+## Remaining (deadline: 23:59 today)
 
-Once done, verify with:
-```
-gcloud billing projects describe civichero-84074
-```
-`billingEnabled: true` means the agent can proceed with deployment.
-
----
-
-## Next agent's task list (in order)
-
-1. **Confirm billing** — run the gcloud billing check above. If not enabled, stop and tell the user.
-2. **Deploy to Cloud Run** — see `docs/plan.md` Step 6 for the exact `gcloud run deploy` command.
-   All `VITE_*` values are in the local `.env` file. `GEMINI_API_KEY` is also in `.env`.
-3. **Set admin UID** — after first deploy, open the live URL, log in, copy the UID from the header
-   (tiny clipboard icon next to XP), add `VITE_ADMIN_UID=<uid>` to `.env`, redeploy.
-4. **Design polish** — invoke the `impeccable` skill (mandatory per CLAUDE.md for all UI work).
-   Focus on mobile layout: IssueDetailPage panels, AchievementModal, CommunityFeed card hierarchy.
-5. **README.md** — one-pager: what it is, run locally, deploy, env vars table.
-6. **Google Doc** — project description with agent flow, tech stack, self-scored eval matrix, links.
-7. **Final Submit** — BlockseBlock → Track 2 → paste three links → submit. IRREVERSIBLE.
+1. **Google Doc** — create + share publicly (user must do this — requires Google account)
+2. **Final Submit** — BlockseBlock → Track 2 → paste three links → submit. IRREVERSIBLE.
 
 ---
 
@@ -88,7 +74,7 @@ gcloud billing projects describe civichero-84074
 - Firebase Rules API needs `x-goog-user-project: civichero-84074` header with gcloud token.
 
 ## Deliverable checklist (before Final Submit)
-- [ ] Live Cloud Run URL (public, stable through judging)
+- [x] Live Cloud Run URL: https://civichero-1051965377286.asia-south1.run.app
 - [x] Public GitHub repo: https://github.com/Nivish-21/civichero
-- [ ] Project-description Google Doc (link-shared publicly)
+- [ ] Project-description Google Doc (link-shared publicly) — **USER MUST CREATE**
 - [ ] Final Submit on BlockseBlock (irreversible — verify all three links first)
