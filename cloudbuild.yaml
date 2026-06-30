@@ -1,0 +1,21 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        docker build \
+          --build-arg "VITE_FIREBASE_API_KEY=$$VITE_FIREBASE_API_KEY" \
+          --build-arg "VITE_FIREBASE_AUTH_DOMAIN=$$VITE_FIREBASE_AUTH_DOMAIN" \
+          --build-arg "VITE_FIREBASE_PROJECT_ID=$$VITE_FIREBASE_PROJECT_ID" \
+          --build-arg "VITE_FIREBASE_STORAGE_BUCKET=$$VITE_FIREBASE_STORAGE_BUCKET" \
+          --build-arg "VITE_FIREBASE_MESSAGING_SENDER_ID=$$VITE_FIREBASE_MESSAGING_SENDER_ID" \
+          --build-arg "VITE_FIREBASE_APP_ID=$$VITE_FIREBASE_APP_ID" \
+          --build-arg "VITE_CLEANER_CODE=$$VITE_CLEANER_CODE" \
+          --build-arg "VITE_VERIFY_THRESHOLD=$$VITE_VERIFY_THRESHOLD" \
+          --build-arg "VITE_ADMIN_UID=$$VITE_ADMIN_UID" \
+          -t "$_AR_HOSTNAME/$PROJECT_ID/cloud-run-source-deploy/$_SERVICE_NAME/$_SERVICE_NAME:$COMMIT_SHA" .
+images:
+  - '$_AR_HOSTNAME/$PROJECT_ID/cloud-run-source-deploy/$_SERVICE_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+options:
+  substitutionOption: ALLOW_LOOSE
