@@ -280,11 +280,11 @@ export const IssueDetailPage: React.FC<IssueDetailPageProps> = ({
               </div>
 
               {/* Actions row */}
-              <div className="flex items-center justify-between pt-2">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => upvoteIssue(issue.id)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border transition-all ${
+                  className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border transition-all ${
                     hasUpvoted
                       ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/10"
                       : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
@@ -306,7 +306,7 @@ export const IssueDetailPage: React.FC<IssueDetailPageProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowAuthorityConsole(!showAuthorityConsole)}
-                    className={`flex items-center gap-1 px-3.5 py-2 text-xs font-semibold rounded-xl border transition-all ${
+                    className={`w-full sm:w-auto flex items-center justify-center gap-1 px-3.5 py-2 text-xs font-semibold rounded-xl border transition-all ${
                       showAuthorityConsole
                         ? "bg-slate-900 border-slate-900 text-white"
                         : "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700"
@@ -516,7 +516,7 @@ export const IssueDetailPage: React.FC<IssueDetailPageProps> = ({
                   </div>
 
                   {/* Priority + SLA */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div
                       className={`p-3 rounded-2xl border ${priorityTone.box}`}
                     >

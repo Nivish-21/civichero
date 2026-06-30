@@ -100,14 +100,16 @@ CLAUDE.md mandates the `impeccable` skill for all UI work. Run it before calling
 
 ---
 
-## Step 8 — Submission deliverables
+## Step 8 — Submission deliverables ← CURRENT STEP
 
-- [ ] **README.md** — one-pager: what it is, how to run locally, how to deploy, env vars table
-- [ ] **Project-description Google Doc** — share link publicly. Include: problem, solution, agent
-  flow diagram (text is fine), tech stack, evaluation matrix self-score, live link, repo link.
-- [ ] Verify all three links are live: Cloud Run URL, GitHub repo, Google Doc
-- [ ] **Final Submit** on BlockseBlock → Track 2 → paste the three links → submit.
-  **Irreversible. Do not submit until all three are verified.**
+- [x] Live URL working: https://civichero-1051965377286.asia-south1.run.app
+- [x] GitHub repo public: https://github.com/Nivish-21/civichero
+- [x] E2E verified — full submission flow tested on live revision (2026-06-30)
+- [ ] **Google Doc** — HUMAN ACTION: create + share publicly. See `docs/status.md` for exact content.
+- [ ] **Final Submit** on BlockseBlock → Track 2 → three links → submit.
+  **Irreversible. Verify all three links first.**
+
+> README.md is already present in the repo. The Google Doc is the only remaining deliverable before Final Submit.
 
 ---
 

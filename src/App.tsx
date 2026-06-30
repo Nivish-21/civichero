@@ -97,7 +97,38 @@ function DashboardContent() {
 
             {/* Profile block */}
             {user && (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="text-right sm:hidden max-w-[10rem]">
+                  <div className="flex items-center gap-1.5 justify-end">
+                    <p className="text-[10px] font-bold text-slate-100 truncate">
+                      {user.displayName}
+                    </p>
+                    {roleBadge && (
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${roleBadge.style}`}>
+                        {roleBadge.label === 'Admin' ? <Shield className="w-2.5 h-2.5 inline" /> : <Wrench className="w-2.5 h-2.5 inline" />}
+                        {' '}{roleBadge.label}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 justify-end mt-0.5">
+                    <span className={`text-[9px] font-semibold px-2 py-0.5 rounded border ${citizenLevel.color}`}>
+                      {citizenLevel.title}
+                    </span>
+                    <span className="text-[10px] text-emerald-400 font-mono font-bold flex items-center gap-0.5">
+                      <Award className="w-3.5 h-3.5 fill-current" />
+                      {user.xp} XP
+                    </span>
+                    <button
+                      type="button"
+                      onClick={copyUid}
+                      title="Copy UID (admin setup)"
+                      className="text-slate-400 hover:text-slate-200 transition-colors"
+                    >
+                      {copiedUid ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    </button>
+                  </div>
+                </div>
+
                 <div className="text-right hidden sm:block">
                   <div className="flex items-center gap-1.5 justify-end">
                     <p className="text-xs font-bold text-slate-100">{user.displayName}</p>

@@ -329,7 +329,7 @@ export const CommunityFeed: React.FC<CommunityFeedProps> = ({ onSelectIssue, onO
                       <span className="truncate">{issue.address}</span>
                     </div>
 
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       {/* Upvote/"I see this too" button */}
                       <button
                         type="button"
@@ -337,7 +337,7 @@ export const CommunityFeed: React.FC<CommunityFeedProps> = ({ onSelectIssue, onO
                           e.stopPropagation();
                           upvoteIssue(issue.id);
                         }}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                        className={`w-full sm:w-auto flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
                           hasUpvoted
                             ? 'bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/10'
                             : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -351,7 +351,7 @@ export const CommunityFeed: React.FC<CommunityFeedProps> = ({ onSelectIssue, onO
                       <button
                         type="button"
                         onClick={() => onSelectIssue(issue)}
-                        className="flex items-center gap-1 text-xs font-semibold text-slate-700 hover:text-emerald-600 transition-colors"
+                        className="w-full sm:w-auto flex items-center justify-center gap-1 text-xs font-semibold text-slate-700 hover:text-emerald-600 transition-colors"
                       >
                         <span>Details</span>
                         <Eye className="w-4 h-4" />

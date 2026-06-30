@@ -57,18 +57,18 @@ export const RoleSelector: React.FC = () => {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
         <input
           type="text"
           value={code}
           onChange={(e) => setCode(e.target.value)}
           placeholder="Enter cleaner code…"
-          className="flex-1 text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400"
+          className="flex-1 min-w-0 text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400"
         />
         <button
           type="submit"
           disabled={loading || !code.trim()}
-          className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold transition-colors disabled:opacity-50 flex items-center gap-1.5 shrink-0"
+          className="w-full sm:w-auto px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0"
         >
           {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
           {loading ? "Verifying…" : "Join"}
