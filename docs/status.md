@@ -51,10 +51,11 @@ Resolved (≥2 clean votes) OR back to Acknowledged (≥2 dirty votes)
 
 ## Step 6 — DEPLOYED ✅ (2026-06-30)
 
-- **revision:** civichero-00008-q7r
-- **Maps key:** baked into bundle `index-Cvo-bMH5.js` (confirmed via curl grep)
+- **latest revision:** civichero-00009-pqw (bug fix: "Publishing..." stuck)
+- **Maps key:** baked into bundle (confirmed via curl grep)
 - **Gemini AI:** live — `/api/agent/resolve` returns real authority routing + SLA
-- **Root cause note:** Cloud Run ignores `cloudbuild.yaml` build-args; fix was baking public VITE_ vars directly as Dockerfile ARG defaults
+- **Root cause note (maps):** Cloud Run ignores `cloudbuild.yaml` build-args; fix was baking public VITE_ vars directly as Dockerfile ARG defaults
+- **Bug fix (submit hang):** `uploadString` to Firebase Storage had no timeout — hung forever when Storage bucket unreachable (rules not deployed). Fix: 20s timeout + compressed thumbnail fallback so Firestore document stays under 1 MiB
 
 ## Remaining (deadline: 23:59 today)
 

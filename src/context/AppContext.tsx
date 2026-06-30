@@ -344,21 +344,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     let photoUrl = "";
     let videoUrl = "";
 
+    // Compress base64 image to a thumbnail — used as Firestore fallback when
+    // Storage upload fails. Keeps Firestore document well under the 1 MiB limit.
+    const compressToThumbnail = (b64: string): Promise<string> =>
+      new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 480;
+          const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext("2d");
+          if (!ctx) { resolve(b64.slice(0, 50000)); return; }
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL("image/jpeg", 0.5));
+        };
+        img.onerror = () => resolve(b64.slice(0, 50000));
+        img.src = b64;
+      });
+
+    // Race the upload against a 20-second deadline so a hung Storage request
+    // (misconfigured bucket / CORS) never blocks the submission indefinitely.
+    const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T> =>
+      Promise.race([
+        p,
+        new Promise<T>((_, reject) =>
+          setTimeout(() => reject(new Error("storage_timeout")), ms),
+        ),
+      ]);
+
     try {
       const photoRef = ref(storage, `issues/${issueId}/photo.jpg`);
-      await uploadString(photoRef, data.photoBase64, "data_url");
-      photoUrl = await getDownloadURL(photoRef);
+      await withTimeout(uploadString(photoRef, data.photoBase64, "data_url"), 20000);
+      photoUrl = await withTimeout(getDownloadURL(photoRef), 5000);
     } catch {
-      photoUrl = data.photoBase64;
+      photoUrl = await compressToThumbnail(data.photoBase64);
     }
 
     if (data.videoBase64) {
       try {
         const videoRef = ref(storage, `issues/${issueId}/video.mp4`);
-        await uploadString(videoRef, data.videoBase64, "data_url");
-        videoUrl = await getDownloadURL(videoRef);
+        await withTimeout(uploadString(videoRef, data.videoBase64, "data_url"), 20000);
+        videoUrl = await withTimeout(getDownloadURL(videoRef), 5000);
       } catch {
-        videoUrl = data.videoBase64;
+        videoUrl = "";
       }
     }
 
