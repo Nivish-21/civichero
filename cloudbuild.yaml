@@ -14,6 +14,7 @@ steps:
           --build-arg "VITE_CLEANER_CODE=$$VITE_CLEANER_CODE" \
           --build-arg "VITE_VERIFY_THRESHOLD=$$VITE_VERIFY_THRESHOLD" \
           --build-arg "VITE_ADMIN_UID=$$VITE_ADMIN_UID" \
+          --build-arg "VITE_GOOGLE_MAPS_API_KEY=$$VITE_GOOGLE_MAPS_API_KEY" \
           -t "$_AR_HOSTNAME/$PROJECT_ID/cloud-run-source-deploy/$_SERVICE_NAME/$_SERVICE_NAME:$COMMIT_SHA" .
 images:
   - '$_AR_HOSTNAME/$PROJECT_ID/cloud-run-source-deploy/$_SERVICE_NAME/$_SERVICE_NAME:$COMMIT_SHA'
