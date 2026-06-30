@@ -376,7 +376,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 
     try {
       const photoRef = ref(storage, `issues/${issueId}/photo.jpg`);
-      await withTimeout(uploadString(photoRef, data.photoBase64, "data_url"), 20000);
+      await withTimeout(uploadString(photoRef, data.photoBase64, "data_url"), 8000);
       photoUrl = await withTimeout(getDownloadURL(photoRef), 5000);
     } catch {
       photoUrl = await compressToThumbnail(data.photoBase64);
@@ -385,7 +385,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     if (data.videoBase64) {
       try {
         const videoRef = ref(storage, `issues/${issueId}/video.mp4`);
-        await withTimeout(uploadString(videoRef, data.videoBase64, "data_url"), 20000);
+        await withTimeout(uploadString(videoRef, data.videoBase64, "data_url"), 8000);
         videoUrl = await withTimeout(getDownloadURL(videoRef), 5000);
       } catch {
         videoUrl = "";
